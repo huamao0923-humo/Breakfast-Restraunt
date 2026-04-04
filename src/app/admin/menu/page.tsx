@@ -1,0 +1,563 @@
+// Path: src/app/admin/menu/page.tsx
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import type { MenuItem, MenuCategory, MenuOption } from '@/types'
+
+// ─── 型別 ───────────────────────────────────────────────
+interface FormState {
+  id: string
+  category: string
+  newCategory: string
+  name: string
+  price: string
+  options: { label: string; price_delta: string }[]
+}
+
+const EMPTY_FORM: FormState = {
+  id: '',
+  category: '',
+  newCategory: '',
+  name: '',
+  price: '',
+  options: [],
+}
+
+// ─── 自動產生 ID ─────────────────────────────────────────
+function generateId(category: string, allItems: (MenuItem & { category: string })[]) {
+  const prefixMap: Record<string, string> = { '主食': 'B', '飲料': 'D' }
+  const prefix = prefixMap[category] ?? category.charAt(0).toUpperCase()
+  const existing = allItems
+    .filter((i) => i.category === category && i.id.startsWith(prefix))
+    .map((i) => parseInt(i.id.replace(prefix, ''), 10))
+    .filter((n) => !isNaN(n))
+  const next = existing.length > 0 ? Math.max(...existing) + 1 : 1
+  return `${prefix}${String(next).padStart(2, '0')}`
+}
+
+// ─── 主元件 ─────────────────────────────────────────────
+export default function AdminMenuPage() {
+  const [categories, setCategories] = useState<MenuCategory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const [showModal, setShowModal] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [form, setForm] = useState<FormState>(EMPTY_FORM)
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false)
+
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+
+  const allItems = categories.flatMap((c) =>
+    c.items.map((item) => ({ ...item, category: c.category }))
+  )
+
+  // ── 讀取菜單 ──────────────────────────────────────────
+  const fetchMenu = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/menu')
+      if (!res.ok) throw new Error('載入失敗')
+      const data: MenuCategory[] = await res.json()
+      setCategories(data)
+    } catch (e) {
+      setError('無法載入菜單，請重新整理')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchMenu() }, [fetchMenu])
+
+  // ── 開啟新增 Modal ────────────────────────────────────
+  const openAddModal = (defaultCategory?: string) => {
+    const cat = defaultCategory ?? (categories[0]?.category ?? '')
+    const suggestedId = cat ? generateId(cat, allItems) : ''
+    setForm({ ...EMPTY_FORM, category: cat, id: suggestedId })
+    setEditingId(null)
+    setShowNewCategoryInput(false)
+    setShowModal(true)
+  }
+
+  // ── 開啟編輯 Modal ────────────────────────────────────
+  const openEditModal = (item: MenuItem, category: string) => {
+    setForm({
+      id: item.id,
+      category,
+      newCategory: '',
+      name: item.name,
+      price: String(item.price),
+      options: item.options.map((o) => ({
+        label: o.label,
+        price_delta: String(o.price_delta),
+      })),
+    })
+    setEditingId(item.id)
+    setShowNewCategoryInput(false)
+    setShowModal(true)
+  }
+
+  // ── 表單：更新分類選擇 ────────────────────────────────
+  const handleCategoryChange = (value: string) => {
+    if (value === '__new__') {
+      setShowNewCategoryInput(true)
+      setForm((f) => ({ ...f, category: '__new__', newCategory: '' }))
+    } else {
+      setShowNewCategoryInput(false)
+      const suggestedId = editingId ? form.id : generateId(value, allItems)
+      setForm((f) => ({ ...f, category: value, id: suggestedId, newCategory: '' }))
+    }
+  }
+
+  // ── 表單：新增選項 ────────────────────────────────────
+  const addOption = () => {
+    setForm((f) => ({ ...f, options: [...f.options, { label: '', price_delta: '0' }] }))
+  }
+
+  const removeOption = (index: number) => {
+    setForm((f) => ({ ...f, options: f.options.filter((_, i) => i !== index) }))
+  }
+
+  const updateOption = (index: number, field: 'label' | 'price_delta', value: string) => {
+    setForm((f) => {
+      const next = [...f.options]
+      next[index] = { ...next[index], [field]: value }
+      return { ...f, options: next }
+    })
+  }
+
+  // ── 儲存（新增 or 編輯）──────────────────────────────
+  const handleSave = async () => {
+    const finalCategory = form.category === '__new__'
+      ? form.newCategory.trim()
+      : form.category
+
+    if (!form.id.trim()) { setError('請填入品項 ID'); return }
+    if (!finalCategory) { setError('請填入分類名稱'); return }
+    if (!form.name.trim()) { setError('請填入品項名稱'); return }
+    if (!form.price || isNaN(Number(form.price))) { setError('請填入有效價格'); return }
+
+    const payload = {
+      id: form.id.trim(),
+      category: finalCategory,
+      name: form.name.trim(),
+      price: Number(form.price),
+      options: form.options
+        .filter((o) => o.label.trim())
+        .map((o, i) => ({
+          id: `OPT_${form.id}_${i}`,
+          label: o.label.trim(),
+          price_delta: Number(o.price_delta) || 0,
+        })) as MenuOption[],
+      sort_order: allItems.filter((i) => i.category === finalCategory).length + 1,
+    }
+
+    setSaving(true)
+    setError(null)
+    try {
+      const isEdit = editingId !== null
+      const url = isEdit ? `/api/menu/${editingId}` : '/api/menu'
+      const method = isEdit ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const body = await res.json()
+        throw new Error(body.error ?? '儲存失敗')
+      }
+      setShowModal(false)
+      await fetchMenu()
+    } catch (e: any) {
+      setError(e.message ?? '儲存失敗，請再試一次')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // ── 刪除 ─────────────────────────────────────────────
+  const handleDelete = async (id: string) => {
+    setSaving(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/menu/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('刪除失敗')
+      setDeleteConfirm(null)
+      await fetchMenu()
+    } catch (e: any) {
+      setError(e.message ?? '刪除失敗，請再試一次')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // ── 畫面 ──────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen text-lg" style={{ background: '#FFFDF7', color: '#9C7A5A', fontFamily: "'Noto Serif TC', serif" }}>
+        載入中...
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen mx-auto max-w-2xl border-l border-r" style={{ background: '#FFFDF7', fontFamily: "'Noto Serif TC', serif", borderColor: '#D4B896' }}>
+      {/* Header */}
+      <div className="sticky top-0 z-40 border-b shadow-sm px-5 sm:px-6 py-4 flex justify-between items-center gap-3" style={{ background: '#FFFDF7', borderColor: '#D4B896' }}>
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold" style={{ color: '#3D2B1F' }}>
+            菜單管理
+          </h1>
+          <p className="text-xs sm:text-sm" style={{ color: '#9C7A5A' }}>
+            新增、編輯、刪除品項與分類
+          </p>
+        </div>
+        <button
+          onClick={() => openAddModal()}
+          className="text-xs sm:text-sm font-semibold px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg transition shrink-0"
+          style={{ background: '#C67C3A', color: '#FFFDF7' }}
+        >
+          ＋ 新增品項
+        </button>
+      </div>
+
+      {/* 全域錯誤提示 */}
+      {error && !showModal && (
+        <div className="mx-5 sm:mx-6 mt-4 p-3 border rounded-lg text-sm flex justify-between" style={{ background: '#FFF5F5', borderColor: '#E8BABA', color: '#A32D2D' }}>
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="font-bold ml-3 shrink-0">
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* 分類列表 */}
+      <div className="px-4 sm:px-6 py-5 space-y-6 pb-20">
+        {categories.length === 0 ? (
+          <div className="text-center py-16 text-lg" style={{ color: '#C9A97A' }}>
+            尚無品項，點右上角「＋ 新增品項」開始吧
+          </div>
+        ) : (
+          categories.map((cat) => (
+            <div key={cat.category} className="rounded-xl border overflow-hidden" style={{ background: '#FFFDF7', borderColor: '#D4B896' }}>
+              {/* 分類 Header */}
+              <div className="flex justify-between items-center px-4 sm:px-5 py-3 border-b rounded-t-xl" style={{ background: '#F5EFE6', borderColor: '#E0D4C0', color: '#5C3D2E' }}>
+                <h2 className="text-base sm:text-lg font-bold">{cat.category}</h2>
+                <button
+                  onClick={() => openAddModal(cat.category)}
+                  className="text-xs sm:text-sm font-medium shrink-0 ml-2"
+                  style={{ color: '#8B5E3C' }}
+                >
+                  ＋ 新增品項
+                </button>
+              </div>
+
+              {/* 品項列表 */}
+              <div className="divide-y" style={{ borderColor: '#EDE5D8' }}>
+                {cat.items.map((item) => (
+                  <div key={item.id} className="flex items-center px-4 sm:px-5 py-3 gap-3">
+                    {/* ID badge */}
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded w-10 text-center shrink-0" style={{ background: '#F5EFE6', color: '#9C7A5A' }}>
+                      {item.id}
+                    </span>
+
+                    {/* 名稱 + 選項 */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium leading-snug" style={{ color: '#3D2B1F' }}>
+                        {item.name}
+                      </div>
+                      {item.options.length > 0 && (
+                        <div className="text-[10px] mt-0.5" style={{ color: '#9C7A5A' }}>
+                          {item.options.map((o) => o.label + (o.price_delta > 0 ? ` +${o.price_delta}` : '')).join('・')}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 價格 */}
+                    <span className="text-sm font-bold shrink-0" style={{ color: '#C67C3A' }}>
+                      ${item.price}
+                    </span>
+
+                    {/* 操作按鈕 */}
+                    <div className="flex gap-1.5 shrink-0">
+                      <button
+                        onClick={() => openEditModal(item, cat.category)}
+                        className="text-xs px-2.5 py-1.5 border rounded-lg transition"
+                        style={{ borderColor: '#D4B896', color: '#5C3D2E' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#F5EFE6' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                      >
+                        編輯
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm(item.id)}
+                        className="text-xs px-2.5 py-1.5 border rounded-lg transition"
+                        style={{ borderColor: '#D4B896', color: '#A32D2D' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#FFF5F5' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                      >
+                        刪除
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* ── 新增 / 編輯 Modal ── */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto shadow-2xl" style={{ background: '#FFFDF7' }}>
+            <div className="px-6 py-4 border-b flex justify-between items-center" style={{ borderColor: '#E0D4C0' }}>
+              <h2 className="text-xl font-bold" style={{ color: '#3D2B1F' }}>
+                {editingId ? '編輯品項' : '新增品項'}
+              </h2>
+              <button
+                onClick={() => { setShowModal(false); setError(null) }}
+                className="text-2xl leading-none"
+                style={{ color: '#C9A97A' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              {/* 錯誤提示 */}
+              {error && (
+                <div className="p-3 border rounded-lg text-sm" style={{ background: '#FFF5F5', borderColor: '#E8BABA', color: '#A32D2D' }}>
+                  {error}
+                </div>
+              )}
+
+              {/* 分類 */}
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#5C3D2E' }}>
+                  分類
+                </label>
+                <select
+                  value={form.category}
+                  onChange={(e) => handleCategoryChange(e.target.value)}
+                  disabled={!!editingId}
+                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none disabled:opacity-50"
+                  style={{ borderColor: '#D4B896', color: '#3D2B1F', background: editingId ? '#F5EFE6' : '#FFFDF7' }}
+                >
+                  {categories.map((c) => (
+                    <option key={c.category} value={c.category}>
+                      {c.category}
+                    </option>
+                  ))}
+                  <option value="__new__">＋ 新增分類</option>
+                </select>
+              </div>
+
+              {/* 新分類名稱 */}
+              {showNewCategoryInput && (
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: '#5C3D2E' }}>
+                    新分類名稱
+                  </label>
+                  <input
+                    type="text"
+                    value={form.newCategory}
+                    onChange={(e) => setForm((f) => ({ ...f, newCategory: e.target.value }))}
+                    placeholder="例如：套餐、點心"
+                    className="w-full border rounded-lg px-3 py-2 text-sm outline-none"
+                    style={{ borderColor: '#D4B896', color: '#3D2B1F' }}
+                  />
+                </div>
+              )}
+
+              {/* 品項 ID */}
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#5C3D2E' }}>
+                  品項 ID{' '}
+                  <span className="text-xs font-normal" style={{ color: '#9C7A5A' }}>
+                    (唯一識別碼)
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={form.id}
+                  onChange={(e) => setForm((f) => ({ ...f, id: e.target.value.toUpperCase() }))}
+                  disabled={!!editingId}
+                  placeholder="例如：B04"
+                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none font-mono disabled:opacity-50"
+                  style={{ borderColor: '#D4B896', color: '#3D2B1F', background: editingId ? '#F5EFE6' : '#FFFDF7' }}
+                />
+              </div>
+
+              {/* 名稱 */}
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#5C3D2E' }}>
+                  品項名稱
+                </label>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="例如：鮪魚蛋餅"
+                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none"
+                  style={{ borderColor: '#D4B896', color: '#3D2B1F' }}
+                />
+              </div>
+
+              {/* 價格 */}
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#5C3D2E' }}>
+                  價格（元）
+                </label>
+                <input
+                  type="number"
+                  value={form.price}
+                  onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
+                  min={0}
+                  placeholder="0"
+                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none"
+                  style={{ borderColor: '#D4B896', color: '#3D2B1F' }}
+                />
+              </div>
+
+              {/* 選項 */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-sm font-medium" style={{ color: '#5C3D2E' }}>
+                    客製化選項{' '}
+                    <span className="text-xs font-normal" style={{ color: '#9C7A5A' }}>
+                      (選填)
+                    </span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addOption}
+                    className="text-sm font-medium"
+                    style={{ color: '#8B5E3C' }}
+                  >
+                    ＋ 新增選項
+                  </button>
+                </div>
+
+                {form.options.length === 0 ? (
+                  <p className="text-sm" style={{ color: '#C9A97A' }}>
+                    尚無選項，點右側新增
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {form.options.map((opt, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={opt.label}
+                          onChange={(e) => updateOption(i, 'label', e.target.value)}
+                          placeholder="選項名稱（如：加蛋）"
+                          className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none"
+                          style={{ borderColor: '#D4B896', color: '#3D2B1F' }}
+                        />
+                        <div className="relative w-24 shrink-0">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: '#C9A97A' }}>
+                            +
+                          </span>
+                          <input
+                            type="number"
+                            value={opt.price_delta}
+                            onChange={(e) => updateOption(i, 'price_delta', e.target.value)}
+                            min={0}
+                            placeholder="0"
+                            className="w-full border rounded-lg pl-6 pr-3 py-2 text-sm outline-none"
+                            style={{ borderColor: '#D4B896', color: '#3D2B1F' }}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeOption(i)}
+                          className="text-lg leading-none shrink-0"
+                          style={{ color: '#C9A97A' }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                    <p className="text-xs" style={{ color: '#9C7A5A' }}>
+                      選項加價填 0 代表免費加點
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t flex gap-3 justify-end" style={{ borderColor: '#E0D4C0' }}>
+              <button
+                onClick={() => { setShowModal(false); setError(null) }}
+                className="px-5 py-2 border rounded-lg text-sm transition"
+                style={{ borderColor: '#D4B896', color: '#5C3D2E' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#F5EFE6'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent'
+                }}
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-5 py-2 rounded-lg text-sm font-semibold transition disabled:opacity-40"
+                style={{ background: '#C67C3A', color: '#FFFDF7' }}
+              >
+                {saving ? '儲存中...' : (editingId ? '儲存變更' : '新增品項')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 刪除確認 Dialog ── */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="rounded-2xl p-6 max-w-sm w-full shadow-2xl" style={{ background: '#FFFDF7' }}>
+            <h3 className="text-lg font-bold mb-2" style={{ color: '#3D2B1F' }}>
+              確認刪除
+            </h3>
+            <p className="text-sm mb-6" style={{ color: '#5C3D2E' }}>
+              刪除品項「
+              <span className="font-semibold">
+                {allItems.find((i) => i.id === deleteConfirm)?.name ?? deleteConfirm}
+              </span>
+              」後無法復原，確定嗎？
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="px-4 py-2 border rounded-lg text-sm transition"
+                style={{ borderColor: '#D4B896', color: '#5C3D2E' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#F5EFE6'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent'
+                }}
+              >
+                取消
+              </button>
+              <button
+                onClick={() => handleDelete(deleteConfirm)}
+                disabled={saving}
+                className="px-4 py-2 rounded-lg text-sm font-semibold transition disabled:opacity-40"
+                style={{ background: '#A32D2D', color: '#FFFDF7' }}
+              >
+                {saving ? '刪除中...' : '確認刪除'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

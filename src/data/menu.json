@@ -1,0 +1,70 @@
+[
+  {
+    "category": "主食",
+    "items": [
+      {
+        "id": "B01",
+        "name": "蛋餅",
+        "price": 40,
+        "options": []
+      },
+      {
+        "id": "B02",
+        "name": "蔥抓餅",
+        "price": 45,
+        "options": [
+          {
+            "id": "O01",
+            "label": "加蛋",
+            "price_delta": 10
+          },
+          {
+            "id": "O02",
+            "label": "加起司",
+            "price_delta": 10
+          }
+        ]
+      },
+      {
+        "id": "B03",
+        "name": "總匯三明治",
+        "price": 65,
+        "options": [
+          {
+            "id": "O03",
+            "label": "不要小黃瓜",
+            "price_delta": 0
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "category": "飲料",
+    "items": [
+      {
+        "id": "D01",
+        "name": "熱豆漿",
+        "price": 20,
+        "options": []
+      },
+      {
+        "id": "D02",
+        "name": "冰奶茶",
+        "price": 30,
+        "options": [
+          {
+            "id": "O04",
+            "label": "少糖",
+            "price_delta": 0
+          },
+          {
+            "id": "O05",
+            "label": "無糖",
+            "price_delta": 0
+          }
+        ]
+      }
+    ]
+  }
+]
