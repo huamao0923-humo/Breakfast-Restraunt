@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { emit } from '@/lib/events'
 
+function parseOrder(row: any) {
+  return {
+    ...row,
+    items: typeof row.items === 'string' ? JSON.parse(row.items) : row.items,
+  }
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -41,7 +48,7 @@ export async function PATCH(
     }
 
     if (updated) {
-      emit('kitchen', 'order-updated', updated)
+      emit('kitchen', 'order-updated', parseOrder(updated))
     }
 
     return NextResponse.json({ success: true })

@@ -4,6 +4,13 @@ import { emit } from '@/lib/events'
 import { getTodayRange } from '@/lib/utils'
 import type { OrderItem } from '@/types'
 
+function parseOrder(row: any) {
+  return {
+    ...row,
+    items: typeof row.items === 'string' ? JSON.parse(row.items) : row.items,
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -41,9 +48,10 @@ export async function POST(request: NextRequest) {
       RETURNING *
     `
 
-    emit('kitchen', 'new-order', order)
+    const parsed = parseOrder(order)
+    emit('kitchen', 'new-order', parsed)
 
-    return NextResponse.json({ id: order.id, pickup_number }, { status: 201 })
+    return NextResponse.json({ id: parsed.id, pickup_number }, { status: 201 })
   } catch (error) {
     console.error('POST /api/orders error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -55,7 +63,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const mode = searchParams.get('mode')
 
-    // 廚房模式：今天所有未取消的訂單，不需要密碼
     if (mode === 'kitchen') {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
@@ -65,10 +72,9 @@ export async function GET(request: NextRequest) {
         AND status != 'cancelled'
         ORDER BY created_at DESC
       `
-      return NextResponse.json(rows)
+      return NextResponse.json(rows.map(parseOrder))
     }
 
-    // 報表模式：需要密碼
     const from = searchParams.get('from')
     const to = searchParams.get('to')
     const password = searchParams.get('password')
@@ -87,7 +93,7 @@ export async function GET(request: NextRequest) {
       ORDER BY created_at DESC
     `
 
-    return NextResponse.json(rows)
+    return NextResponse.json(rows.map(parseOrder))
   } catch (error) {
     console.error('GET /api/orders error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
