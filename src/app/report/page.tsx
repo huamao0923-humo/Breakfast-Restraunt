@@ -12,8 +12,6 @@ function formatTime(dateStr: string) {
   })
 }
 
-const PASSWORD = process.env.NEXT_PUBLIC_REPORT_PASSWORD ?? '1234'
-
 export const dynamic = 'force-dynamic'
 
 export default function ReportPage() {
@@ -26,8 +24,16 @@ export default function ReportPage() {
     return d.toISOString().split('T')[0]
   })
 
-  const handleLogin = () => {
-    if (input === PASSWORD) {
+  const handleLogin = async () => {
+    const tomorrow = new Date(date)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const to = tomorrow.toISOString().split('T')[0]
+    const res = await fetch(
+      `/api/orders?password=${encodeURIComponent(input)}&from=${date}&to=${to}`
+    )
+    if (res.ok) {
+      const data = await res.json()
+      setOrders(data as Order[])
       setAuthed(true)
       setError(false)
     } else {
