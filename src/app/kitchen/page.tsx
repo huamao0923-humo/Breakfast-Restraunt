@@ -21,9 +21,9 @@ function KitchenContent() {
   useEffect(() => {
     // 載入當天未完成訂單
     fetch('/api/orders?mode=kitchen')
-      .then((res) => res.json())
+      .then((res) => res.ok ? res.json() : Promise.reject(res))
       .then((data: Order[]) => {
-        setOrders(data)
+        setOrders(Array.isArray(data) ? data : [])
         setLoading(false)
       })
       .catch(() => setLoading(false))
