@@ -5,7 +5,11 @@ import { emit } from '@/lib/events'
 function parseOrder(row: any) {
   return {
     ...row,
-    items: typeof row.items === 'string' ? JSON.parse(row.items) : row.items,
+    items: Array.isArray(row.items)
+      ? row.items
+      : typeof row.items === 'string'
+      ? JSON.parse(row.items)
+      : [],
   }
 }
 

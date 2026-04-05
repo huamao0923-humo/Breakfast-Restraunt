@@ -7,7 +7,11 @@ import type { OrderItem } from '@/types'
 function parseOrder(row: any) {
   return {
     ...row,
-    items: typeof row.items === 'string' ? JSON.parse(row.items) : row.items,
+    items: Array.isArray(row.items)
+      ? row.items
+      : typeof row.items === 'string'
+      ? JSON.parse(row.items)
+      : [],
   }
 }
 
@@ -39,7 +43,7 @@ export async function POST(request: NextRequest) {
       VALUES (
         ${table_id},
         ${pickup_number},
-        ${JSON.stringify(items as OrderItem[])},
+        ${sql.json(items as OrderItem[])},
         ${total},
         ${note || null},
         'pending',
