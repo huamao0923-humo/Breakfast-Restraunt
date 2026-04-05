@@ -32,11 +32,14 @@ function KitchenContent() {
     const es = new EventSource('/api/events?channel=kitchen')
 
     es.addEventListener('new-order', (e) => {
-      setOrders((prev) => [JSON.parse(e.data) as Order, ...prev])
+      const order = JSON.parse(e.data) as Order
+      order.items = Array.isArray(order.items) ? order.items : typeof order.items === 'string' ? JSON.parse(order.items) : []
+      setOrders((prev) => [order, ...prev])
     })
 
     es.addEventListener('order-updated', (e) => {
       const updated = JSON.parse(e.data) as Order
+      updated.items = Array.isArray(updated.items) ? updated.items : typeof updated.items === 'string' ? JSON.parse(updated.items) : []
       setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
     })
 
