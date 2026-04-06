@@ -126,9 +126,12 @@ function KitchenContent() {
                       style={{ color: '#3D2B1F', borderColor: '#EDE5D8' }}
                     >
                       <span>{item.name}</span>
-                      <span className="font-bold" style={{ color: '#8B5E3C' }}>
-                        ×{item.qty}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span style={{ color: '#9C7A5A' }}>×{item.qty}</span>
+                        <span className="font-bold" style={{ color: '#8B5E3C' }}>
+                          ${item.price * item.qty}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -139,6 +142,12 @@ function KitchenContent() {
                     {order.note}
                   </p>
                 )}
+
+                {/* Total */}
+                <div className="flex justify-between px-3 py-2 border-t" style={{ borderColor: '#E0D0BC' }}>
+                  <span className="text-[12px] font-bold" style={{ color: '#5C3D2E' }}>合計</span>
+                  <span className="text-[13px] font-bold" style={{ color: '#5C3D2E' }}>${order.total}</span>
+                </div>
 
                 {/* Done Button */}
                 <button
