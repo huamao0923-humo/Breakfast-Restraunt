@@ -38,6 +38,9 @@ function MenuContent() {
   const [submitting, setSubmitting]         = useState(false)
   const [submitted, setSubmitted]           = useState(false)
   const [pickupNumber, setPickupNumber]     = useState<number | null>(null)
+  // 送出成功後保留一份快照，讓成功畫面可以顯示品項
+  const [snapshot, setSnapshot]             = useState<{ name: string; qty: number; price: number }[]>([])
+  const [snapshotTotal, setSnapshotTotal]   = useState(0)
 
   const { items, addItem, removeItem, updateQty, clearCart, total } = useCart()
 
@@ -91,11 +94,17 @@ function MenuContent() {
       })
       if (res.ok) {
         const data = await res.json()
+        // 先快照，再清空購物車
+        setSnapshot(formattedItems.map((i) => ({ name: i.name, qty: i.qty, price: i.price })))
+        setSnapshotTotal(total)
         setPickupNumber(data.pickup_number ?? null)
         setShowConfirm(false)
         setSubmitted(true)
         clearCart()
-        setTimeout(() => { setSubmitted(false); setOrderNote(''); setPickupNumber(null) }, 3500)
+        // 內用：3.5 秒後自動消失；外帶：等待使用者手動關閉
+        if (table !== 'takeout') {
+          setTimeout(() => { setSubmitted(false); setOrderNote(''); }, 3500)
+        }
       }
     } catch (e) {
       console.error(e)
@@ -356,22 +365,94 @@ function MenuContent() {
         </div>
       )}
 
-      {/* ── 送出成功 Overlay ─────────────────────────── */}
-      {submitted && (
+      {/* ── 送出成功：內用（3.5 秒自動消失）── */}
+      {submitted && table !== 'takeout' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center overlay-enter font-sans"
           style={{ background: 'rgba(0,0,0,0.55)' }}>
           <div className="rounded-3xl p-10 text-center mx-6 pop-in" style={{ background: '#fff', minWidth: 240 }}>
             <div className="text-6xl mb-4">✅</div>
             <h2 className="text-xl font-bold mb-1" style={{ color: C.text }}>訂單已送出！</h2>
-            {table === 'takeout' && pickupNumber && (
-              <div className="mt-4 mb-2">
-                <p className="text-sm" style={{ color: C.sub }}>取餐號碼</p>
-                <p className="text-5xl font-black mt-1" style={{ color: C.primary }}>
-                  #{String(pickupNumber).padStart(3, '0')}
-                </p>
+            <p className="text-sm mt-2" style={{ color: C.sub }}>{table} 桌，廚房收到了</p>
+            <p className="text-sm mt-1" style={{ color: C.muted }}>請稍候 🍳</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── 送出成功：外帶號碼單（全屏，手動關閉）── */}
+      {submitted && table === 'takeout' && (
+        <div className="fixed inset-0 z-50 flex flex-col font-sans overlay-enter"
+          style={{ background: C.header }}>
+
+          {/* 頂部裝飾條 */}
+          <div className="h-2 w-full" style={{ background: C.primary }} />
+
+          <div className="flex-1 overflow-y-auto flex flex-col items-center px-6 py-8">
+
+            {/* 店名 */}
+            <p className="text-sm tracking-[4px] mb-1" style={{ color: '#C9A97A' }}>忠國豆漿</p>
+            <p className="text-xs tracking-[2px] mb-8" style={{ color: '#7A5240' }}>外帶取餐號碼單</p>
+
+            {/* 取餐號碼 大字 */}
+            <div className="w-full max-w-xs rounded-3xl flex flex-col items-center py-8 mb-8 pop-in"
+              style={{ background: C.primary, boxShadow: '0 8px 32px rgba(217,119,6,0.4)' }}>
+              <p className="text-sm font-semibold tracking-[3px] mb-2" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                取餐號碼
+              </p>
+              <p className="font-black leading-none" style={{ color: '#fff', fontSize: 96 }}>
+                {pickupNumber !== null ? String(pickupNumber).padStart(3, '0') : '---'}
+              </p>
+              <p className="text-xs mt-3" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                聽到叫號請至櫃台取餐
+              </p>
+            </div>
+
+            {/* 訂單明細 */}
+            <div className="w-full max-w-xs rounded-2xl overflow-hidden mb-6"
+              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
+              <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+                <p className="text-xs font-bold tracking-[3px]" style={{ color: '#C9A97A' }}>訂單明細</p>
               </div>
-            )}
-            <p className="text-sm mt-3" style={{ color: C.muted }}>廚房收到了，請稍候 🍳</p>
+              <div className="px-4 py-2">
+                {snapshot.map((item, i) => (
+                  <div key={i} className="flex justify-between items-center py-2.5 border-b last:border-b-0"
+                    style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                    <span className="text-sm" style={{ color: '#F5E6C8' }}>
+                      {item.name}
+                    </span>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-sm font-semibold px-2 py-0.5 rounded-full"
+                        style={{ background: 'rgba(255,255,255,0.1)', color: '#C9A97A' }}>
+                        ×{item.qty}
+                      </span>
+                      <span className="text-sm font-bold" style={{ color: '#F5E6C8' }}>
+                        ${item.price * item.qty}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between items-center px-4 py-3 border-t"
+                style={{ borderColor: 'rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)' }}>
+                <span className="text-sm" style={{ color: '#C9A97A' }}>合計</span>
+                <span className="text-base font-bold" style={{ color: '#F5E6C8' }}>${snapshotTotal}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-center" style={{ color: '#5C3D2E' }}>
+              請保管好此號碼，叫號後 3 分鐘未取視為棄單
+            </p>
+          </div>
+
+          {/* 底部：完成按鈕 */}
+          <div className="px-6 pb-safe"
+            style={{ paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', paddingTop: 12,
+              background: 'rgba(0,0,0,0.3)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <button
+              onClick={() => { setSubmitted(false); setOrderNote(''); setPickupNumber(null); setSnapshot([]); setSnapshotTotal(0) }}
+              className="w-full rounded-2xl py-4 text-base font-bold tracking-[3px] transition-all active:scale-[0.98]"
+              style={{ background: C.primary, color: '#fff' }}>
+              完成，繼續點餐
+            </button>
           </div>
         </div>
       )}
