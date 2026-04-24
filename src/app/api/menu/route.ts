@@ -4,8 +4,18 @@ import type { MenuCategory } from '@/types'
 
 export async function GET() {
   try {
+    // Order by the category's minimum sort_order first (gives category ordering),
+    // then by each item's own sort_order within the category.
     const rows = await sql`
-      SELECT * FROM menu_items ORDER BY category, sort_order ASC
+      SELECT mi.*,
+             cat_rank.cat_min
+      FROM   menu_items mi
+      JOIN   (
+               SELECT category, MIN(sort_order) AS cat_min
+               FROM   menu_items
+               GROUP  BY category
+             ) cat_rank ON mi.category = cat_rank.category
+      ORDER  BY cat_rank.cat_min ASC, mi.sort_order ASC
     `
 
     const grouped: Record<string, MenuCategory> = {}
