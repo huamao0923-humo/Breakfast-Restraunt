@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       VALUES (
         ${table_id},
         ${pickup_number},
-        ${sql.json(items as OrderItem[])},
+        ${sql.json(JSON.parse(JSON.stringify(items)))},
         ${total},
         ${note || null},
         'pending',
