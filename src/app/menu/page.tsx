@@ -171,9 +171,15 @@ function MenuContent() {
           '--tw-divide-opacity': '1',
         } as React.CSSProperties}>
           {activeCat?.items.map((item) => {
-            const qty       = getItemQty(item.id)
-            const isSoldOut = soldOut.includes(item.id)
-            const hasOpts   = item.options.length > 0 || TOPPING_CATEGORIES.has(activeCategory)
+            const qty          = getItemQty(item.id)
+            const isSoldOut    = soldOut.includes(item.id)
+            const hasOpts      = item.options.length > 0 || TOPPING_CATEGORIES.has(activeCategory)
+            // 有「杯」字選項代表以規格定價，列表不顯示基礎價
+            const hasSizeOpts  = item.options.some(o => o.label.includes('杯'))
+            // 規格最低價（小杯）
+            const minPrice     = hasSizeOpts
+              ? item.price + Math.min(0, ...item.options.filter(o => o.label.includes('杯')).map(o => o.price_delta))
+              : item.price
 
             return (
               <div key={item.id}
@@ -193,16 +199,28 @@ function MenuContent() {
                         售罄
                       </span>
                     )}
-                    {hasOpts && !isSoldOut && (
+                    {hasSizeOpts && !isSoldOut && (
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full"
+                        style={{ background: '#E0F2FE', color: '#0369A1' }}>
+                        選規格
+                      </span>
+                    )}
+                    {!hasSizeOpts && hasOpts && !isSoldOut && (
                       <span className="text-xs font-medium px-2 py-0.5 rounded-full"
                         style={{ background: '#FEF3C7', color: '#92400E' }}>
                         可客製
                       </span>
                     )}
                   </div>
-                  <span className="text-base font-semibold" style={{ color: C.primary }}>
-                    ${item.price}
-                  </span>
+                  {hasSizeOpts ? (
+                    <span className="text-sm font-medium" style={{ color: C.muted }}>
+                      ${minPrice} 起
+                    </span>
+                  ) : (
+                    <span className="text-base font-semibold" style={{ color: C.primary }}>
+                      ${item.price}
+                    </span>
+                  )}
                 </div>
 
                 {/* 右側：加減按鈕 */}
