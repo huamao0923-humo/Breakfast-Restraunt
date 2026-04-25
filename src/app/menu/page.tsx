@@ -38,6 +38,7 @@ function MenuContent() {
   const [submitting, setSubmitting]         = useState(false)
   const [submitted, setSubmitted]           = useState(false)
   const [pickupNumber, setPickupNumber]     = useState<number | null>(null)
+  const [redirectingToPay, setRedirectingToPay] = useState(false)
   // 送出成功後保留一份快照，讓成功畫面可以顯示品項
   const [snapshot, setSnapshot]             = useState<{ name: string; qty: number; price: number }[]>([])
   const [snapshotTotal, setSnapshotTotal]   = useState(0)
@@ -92,22 +93,28 @@ function MenuContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ table_id: table, items: formattedItems, total, note: orderNote || null }),
       })
-      if (res.ok) {
-        const data = await res.json()
-        // 先快照，再清空購物車
-        setSnapshot(formattedItems.map((i) => ({ name: i.name, qty: i.qty, price: i.price })))
-        setSnapshotTotal(total)
-        setPickupNumber(data.pickup_number ?? null)
-        setShowConfirm(false)
-        setSubmitted(true)
+      if (!res.ok) return
+      const data = await res.json()
+
+      // 跳轉 LINE Pay
+      setShowConfirm(false)
+      setRedirectingToPay(true)
+      const productName = formattedItems.map(i => `${i.name}×${i.qty}`).join(', ')
+      const payRes = await fetch('/api/linepay/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: data.id, amount: total, productName }),
+      })
+      const payData = await payRes.json()
+      if (payData.paymentUrl) {
         clearCart()
-        // 內用：3.5 秒後自動消失；外帶：等待使用者手動關閉
-        if (table !== 'takeout') {
-          setTimeout(() => { setSubmitted(false); setOrderNote(''); }, 3500)
-        }
+        window.location.href = payData.paymentUrl
+      } else {
+        setRedirectingToPay(false)
       }
     } catch (e) {
       console.error(e)
+      setRedirectingToPay(false)
     } finally {
       setSubmitting(false)
     }
@@ -380,6 +387,15 @@ function MenuContent() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── 導向 LINE Pay 中 ── */}
+      {redirectingToPay && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center font-sans"
+          style={{ background: 'rgba(0,0,0,0.75)' }}>
+          <div className="w-16 h-16 rounded-full border-4 border-white border-t-transparent animate-spin mb-6" />
+          <p className="text-base font-semibold text-white">導向 LINE Pay…</p>
         </div>
       )}
 

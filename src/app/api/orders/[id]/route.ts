@@ -13,6 +13,21 @@ function parseOrder(row: any) {
   }
 }
 
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const [order] = await sql`SELECT * FROM orders WHERE id = ${id}`
+    if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json(parseOrder(order))
+  } catch (error) {
+    console.error('GET /api/orders/[id] error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

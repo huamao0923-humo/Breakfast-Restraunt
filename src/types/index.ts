@@ -47,5 +47,6 @@ export interface Order {
   note: string | null
   status: 'pending' | 'completed' | 'cancelled'
   paid: boolean
+  transaction_id?: string | null
   created_at: string
 }
