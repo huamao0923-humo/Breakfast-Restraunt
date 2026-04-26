@@ -106,9 +106,15 @@ function KitchenContent() {
                   <div className="px-4 py-3 flex justify-between items-center"
                     style={{ background: isNew ? '#8B3A1A' : '#5C3D2E' }}>
                     <div className="flex items-center gap-2">
-                      <span className="text-base font-bold tracking-[2px]" style={{ color: '#F5E6C8' }}>
-                        {order.table_id} 桌
-                      </span>
+                      {order.table_id === 'takeout' ? (
+                        <span className="text-base font-bold tracking-[2px]" style={{ color: '#F5C842' }}>
+                          外帶 #{order.pickup_number != null ? String(order.pickup_number).padStart(3, '0') : '---'}
+                        </span>
+                      ) : (
+                        <span className="text-base font-bold tracking-[2px]" style={{ color: '#F5E6C8' }}>
+                          {order.table_id} 桌
+                        </span>
+                      )}
                       {isNew && (
                         <span className="text-[10px] rounded-full px-2 py-0.5 font-bold tracking-wide"
                           style={{ background: '#F5C842', color: '#3D2B1F' }}>
