@@ -26,7 +26,9 @@ const C = {
 
 function MenuContent() {
   const searchParams = useSearchParams()
-  const table = searchParams.get('table') || 'A1'
+  const table        = searchParams.get('table') || 'A1'
+  const ticketParam  = searchParams.get('ticket')
+  const ticketNumber = ticketParam ? Number(ticketParam) : null
 
   const [menuData, setMenuData]             = useState<MenuCategory[]>([])
   const [menuLoading, setMenuLoading]       = useState(true)
@@ -91,7 +93,7 @@ function MenuContent() {
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ table_id: table, items: formattedItems, total, note: orderNote || null }),
+        body: JSON.stringify({ table_id: table, items: formattedItems, total, note: orderNote || null, pickup_number: ticketNumber ?? undefined }),
       })
       if (!res.ok) return
       const data = await res.json()
@@ -144,9 +146,22 @@ function MenuContent() {
               style={{ color: '#F5E6C8' }}>
               忠國豆漿
             </h1>
-            <p className="text-sm text-center mt-1" style={{ color: '#C9A97A' }}>
-              桌號 <span className="font-semibold">{table}</span>　·　手工現做
-            </p>
+            {table === 'takeout' && ticketNumber != null ? (
+              <div className="flex items-center justify-center gap-3 mt-1">
+                <span className="text-sm" style={{ color: '#C9A97A' }}>外帶</span>
+                <span
+                  className="text-2xl font-black leading-none px-3 py-0.5 rounded-xl"
+                  style={{ background: '#F5C842', color: '#3D2B1F' }}
+                >
+                  #{String(ticketNumber).padStart(3, '0')}
+                </span>
+                <span className="text-sm" style={{ color: '#C9A97A' }}>號</span>
+              </div>
+            ) : (
+              <p className="text-sm text-center mt-1" style={{ color: '#C9A97A' }}>
+                桌號 <span className="font-semibold">{table}</span>　·　手工現做
+              </p>
+            )}
           </div>
 
           {/* ── 分類 Pill 列 ─────────────────────── */}
@@ -319,10 +334,17 @@ function MenuContent() {
             {/* 標題列 */}
             <div className="px-6 pt-3 pb-2 flex justify-between items-center">
               <h2 className="text-xl font-bold" style={{ color: C.text }}>確認訂單</h2>
-              <span className="text-sm px-3 py-1 rounded-full font-medium"
-                style={{ background: C.pill, color: C.sub }}>
-                桌號 {table}
-              </span>
+              {table === 'takeout' && ticketNumber != null ? (
+                <span className="text-sm px-3 py-1 rounded-full font-bold"
+                  style={{ background: '#F5C842', color: '#3D2B1F' }}>
+                  外帶 #{String(ticketNumber).padStart(3, '0')}
+                </span>
+              ) : (
+                <span className="text-sm px-3 py-1 rounded-full font-medium"
+                  style={{ background: C.pill, color: C.sub }}>
+                  桌號 {table}
+                </span>
+              )}
             </div>
 
             {/* 品項清單 */}
