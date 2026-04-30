@@ -119,7 +119,7 @@ function KitchenContent() {
               const isNew = idx === 0
               return (
                 <div key={order.id}
-                  className="rounded-2xl overflow-hidden"
+                  className="rounded-2xl overflow-hidden flex flex-col"
                   style={{
                     background: cardBg,
                     boxShadow: isNew
@@ -195,7 +195,7 @@ function KitchenContent() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex">
+                  <div className="flex mt-auto">
                     <button
                       onClick={() => setCancelConfirm(order.id)}
                       className="font-bold tracking-[2px] transition-all active:scale-[0.98]"
