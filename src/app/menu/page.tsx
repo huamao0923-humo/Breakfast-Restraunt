@@ -293,8 +293,8 @@ function MenuContent() {
   return (
     <div className="font-sans" style={{ background: C.bg }}>
 
-      <div className="flex flex-col"
-        style={{ minHeight: '100dvh', paddingBottom: 'calc(76px + env(safe-area-inset-bottom, 0px))' }}>
+      <div className="flex flex-col mx-auto"
+        style={{ maxWidth: 680, minHeight: '100dvh', paddingBottom: 'calc(76px + env(safe-area-inset-bottom, 0px))' }}>
 
         {/* Header */}
         <div style={{ background: C.header }}>
@@ -355,7 +355,7 @@ function MenuContent() {
       </div>
 
       {/* ── Mobile 底部 Cart Bar ─────────────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 z-30"
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 z-30" style={{ width: '100%', maxWidth: 680 }}
         style={{
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           background: 'rgba(255,255,255,0.95)',
