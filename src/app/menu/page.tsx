@@ -40,7 +40,7 @@ function ItemCard({
   }
 
   return (
-    <div className="flex justify-between items-center py-4 px-5 border-b"
+    <div className="flex justify-between items-center py-5 px-6 border-b"
       style={{ borderColor: C.border, opacity: isSoldOut ? 0.5 : 1 }}>
 
       {/* 左側：名稱 + 標籤 + 價格 */}
@@ -298,7 +298,7 @@ function MenuContent() {
 
         {/* Header */}
         <div style={{ background: C.header }}>
-          <div className="px-5 pt-5 pb-3">
+          <div className="px-6 pt-6 pb-3">
             <h1 className="text-xl font-bold text-center tracking-widest" style={{ color: '#3D2B1F' }}>
               忠國豆漿
             </h1>
@@ -319,7 +319,7 @@ function MenuContent() {
           </div>
 
           {/* 分類 Pills */}
-          <div className="flex overflow-x-auto gap-2 whitespace-nowrap px-4 pb-3 scrollbar-none">
+          <div className="flex overflow-x-auto gap-2 whitespace-nowrap px-6 pb-4 scrollbar-none">
             {menuData.map(cat => {
               const isOn = cat.category === activeCategory
               return (
