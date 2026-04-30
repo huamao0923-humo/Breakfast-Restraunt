@@ -372,17 +372,10 @@ function MenuContent() {
             {/* 標題 */}
             <div className="px-6 pb-3 flex justify-between items-center shrink-0">
               <h2 className="text-xl font-bold" style={{ color: C.text }}>確認訂單</h2>
-              {table === 'takeout' && ticketNumber != null ? (
-                <span className="text-sm px-3 py-1 rounded-full font-bold"
-                  style={{ background: '#F5C842', color: '#3D2B1F' }}>
-                  外帶 #{String(ticketNumber).padStart(3, '0')}
-                </span>
-              ) : (
-                <span className="text-sm px-3 py-1 rounded-full font-medium"
-                  style={{ background: C.pill, color: C.sub }}>
-                  {table === 'takeout' ? '外帶' : `桌號 ${table}`}
-                </span>
-              )}
+              <span className="text-sm px-3 py-1 rounded-full font-medium"
+                style={{ background: C.pill, color: C.sub }}>
+                {table === 'takeout' ? '外帶' : `桌號 ${table}`}
+              </span>
             </div>
             {/* 品項列表 */}
             <div className="flex-1 overflow-y-auto px-6 space-y-3 pb-2">
