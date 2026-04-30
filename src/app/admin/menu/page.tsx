@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { MenuItem, MenuCategory, MenuOption } from '@/types'
+import { TEMPERATURES } from '@/lib/temperature'
 
 // ─── 型別 ─────────────────────────────────────────────────
 interface FormState {
@@ -11,7 +12,7 @@ interface FormState {
   newCategory: string
   name: string
   price: string
-  options: { label: string; price_delta: string }[]
+  options: { id?: string; label: string; price_delta: string }[]
 }
 
 const EMPTY_FORM: FormState = {
@@ -172,10 +173,18 @@ export default function AdminMenuPage() {
   }
 
   const openEditModal = (item: MenuItem, category: string) => {
+    const hasSizeOpts = item.options.some(o => o.label.includes('杯'))
+    const hasTempOpts = item.options.some(o => o.id.startsWith('temp_'))
+    // 飲料品項若 DB 尚未存溫度選項，自動預填
+    const baseOptions = item.options.map((o) => ({ id: o.id, label: o.label, price_delta: String(o.price_delta) }))
+    const tempDefaults = TEMPERATURES.map(t => ({ id: t.id, label: t.label, price_delta: String(t.price_delta) }))
+    const mergedOptions = hasSizeOpts && !hasTempOpts
+      ? [...baseOptions, ...tempDefaults]
+      : baseOptions
     setForm({
       id: item.id, category, newCategory: '', name: item.name,
       price: String(item.price),
-      options: item.options.map((o) => ({ label: o.label, price_delta: String(o.price_delta) })),
+      options: mergedOptions,
     })
     setEditingId(item.id)
     setShowNewCategoryInput(false)
@@ -216,7 +225,7 @@ export default function AdminMenuPage() {
       id: newIdTrimmed, category: finalCategory, name: form.name.trim(),
       price: Number(form.price),
       options: form.options.filter((o) => o.label.trim()).map((o, i) => ({
-        id: `OPT_${newIdTrimmed}_${i}`, label: o.label.trim(), price_delta: Number(o.price_delta) || 0,
+        id: o.id ?? `OPT_${newIdTrimmed}_${i}`, label: o.label.trim(), price_delta: Number(o.price_delta) || 0,
       })) as MenuOption[],
       sort_order: allItems.filter((i) => i.category === finalCategory).length + 1,
     }

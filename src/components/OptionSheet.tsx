@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import type { MenuItem, CartItemOption } from '@/types'
-import { TEMPERATURES } from '@/lib/temperature'
 
 interface OptionSheetProps {
   item: MenuItem
@@ -24,10 +23,12 @@ const C = {
 const LARGE_ID = '__large__'
 
 export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
-  // 拆分規格選項（含「杯」字）與一般客製選項
+  // 拆分規格選項（含「杯」字）、溫度選項（id 以 temp_ 開頭）與一般客製選項
   const sizeOptions    = item.options.filter(o => o.label.includes('杯'))
-  const regularOptions = item.options.filter(o => !o.label.includes('杯'))
+  const tempOptions    = item.options.filter(o => o.id.startsWith('temp_'))
+  const regularOptions = item.options.filter(o => !o.label.includes('杯') && !o.id.startsWith('temp_'))
   const hasSizeOpts    = sizeOptions.length > 0
+  const hasTempOpts    = tempOptions.length > 0
 
   // 規格：單選，必選（無預設）
   const [selectedSizeId, setSelectedSizeId] = useState<string | null>(null)
@@ -42,7 +43,9 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
 
   // 飲料兩題都必選才能送出
-  const canAdd = hasSizeOpts ? (selectedSizeId !== null && selectedTempId !== null) : true
+  const canAdd = hasSizeOpts
+    ? (selectedSizeId !== null && (!hasTempOpts || selectedTempId !== null))
+    : true
 
   const handleAdd = () => {
     if (!canAdd) return
@@ -51,8 +54,8 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
         ? sizeOptions.filter(o => o.id === selectedSizeId)
         : []
 
-    const tempOpt: CartItemOption[] = hasSizeOpts && selectedTempId
-      ? TEMPERATURES.filter(t => t.id === selectedTempId)
+    const tempOpt: CartItemOption[] = hasTempOpts && selectedTempId
+      ? tempOptions.filter(t => t.id === selectedTempId)
       : []
 
     const regularOpts = regularOptions.filter(o => selected.includes(o.id))
@@ -200,14 +203,14 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
             </div>
           )}
 
-          {/* ── 溫度（冰/溫/熱）單選，僅飲料顯示 ── */}
-          {hasSizeOpts && (
+          {/* ── 溫度，僅飲料且有設溫度選項時顯示 ── */}
+          {hasSizeOpts && hasTempOpts && (
             <div>
               <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: C.sub }}>
                 選擇溫度
               </p>
               <div className="grid grid-cols-3 gap-2">
-                {TEMPERATURES.map(t => {
+                {tempOptions.map(t => {
                   const isOn = selectedTempId === t.id
                   const emoji = t.id === 'temp_ice' ? '🧊' : t.id === 'temp_warm' ? '🌤️' : '🔥'
                   return (
@@ -273,7 +276,7 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
             className="py-4 rounded-2xl text-base font-bold transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ flex: 2, background: canAdd ? C.primary : C.sub, color: '#fff' }}>
             {!canAdd
-              ? (selectedSizeId === null ? '請先選擇規格' : '請先選擇溫度')
+              ? (selectedSizeId === null ? '請先選擇規格' : hasTempOpts ? '請先選擇溫度' : '請先選擇規格')
               : hasSizeOpts && currentPrice !== null
                 ? `加入購物車 $${currentPrice}`
                 : '加入購物車'}
