@@ -24,7 +24,7 @@ const C = {
   pill:     '#F0EBE3',
 }
 
-// ── 共用：品項卡片 ────────────────────────────────────────
+// ── 共用：品項列表列 ─────────────────────────────────────
 function ItemCard({
   item, qty, isSoldOut, hasOpts, hasSizeOpts, minPrice,
   onAdd, onMinus, onOpenOptions,
@@ -40,69 +40,59 @@ function ItemCard({
   }
 
   return (
-    <div
-      onClick={() => { if (!isSoldOut) { if (hasOpts) onOpenOptions(); else onAdd() } }}
-      className="flex flex-col rounded-2xl overflow-hidden border cursor-pointer transition-all duration-200 group"
-      style={{
-        background:   C.card,
-        borderColor:  qty > 0 ? C.primary : C.border,
-        boxShadow:    qty > 0
-          ? `0 0 0 2px ${C.primary}40, 0 4px 16px rgba(217,119,6,0.12)`
-          : '0 1px 4px rgba(0,0,0,0.06)',
-        opacity: isSoldOut ? 0.5 : 1,
-      }}
-    >
-      {/* 圖示區 */}
-      <div className="flex items-center justify-center text-5xl relative"
-        style={{ height: 90, background: qty > 0 ? '#FEF3C7' : C.pill, borderBottom: `1px solid ${C.border}` }}>
-        🍽️
-        {isSoldOut && (
-          <span className="absolute top-2 left-2 text-xs font-bold px-2 py-0.5 rounded-full"
-            style={{ background: '#F2F2F7', color: C.muted }}>售罄</span>
-        )}
-        {hasSizeOpts && !isSoldOut && (
-          <span className="absolute top-2 left-2 text-xs font-bold px-2 py-0.5 rounded-full"
-            style={{ background: '#E0F2FE', color: '#0369A1' }}>選規格</span>
-        )}
-        {!hasSizeOpts && hasOpts && !isSoldOut && (
-          <span className="absolute top-2 left-2 text-xs font-bold px-2 py-0.5 rounded-full"
-            style={{ background: '#FEF3C7', color: '#92400E' }}>可客製</span>
-        )}
-        {qty > 0 && (
-          <span className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white"
-            style={{ background: C.primary }}>{qty}</span>
+    <div className="flex justify-between items-center py-4 px-5 border-b"
+      style={{ borderColor: C.border, opacity: isSoldOut ? 0.5 : 1 }}>
+
+      {/* 左側：名稱 + 標籤 + 價格 */}
+      <div className="flex-1 pr-4 min-w-0">
+        <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
+          <span className="text-base font-bold leading-snug" style={{ color: C.text }}>
+            {item.name}
+          </span>
+          {isSoldOut && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full"
+              style={{ background: '#F2F2F7', color: C.muted }}>售罄</span>
+          )}
+          {hasSizeOpts && !isSoldOut && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full"
+              style={{ background: '#E0F2FE', color: '#0369A1' }}>選規格</span>
+          )}
+          {!hasSizeOpts && hasOpts && !isSoldOut && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full"
+              style={{ background: '#FEF3C7', color: '#92400E' }}>可客製</span>
+          )}
+        </div>
+        {hasSizeOpts ? (
+          <span className="text-sm font-medium" style={{ color: C.muted }}>${minPrice} 起</span>
+        ) : (
+          <span className="text-base font-semibold" style={{ color: C.primary }}>${item.price}</span>
         )}
       </div>
 
-      {/* 資訊區 */}
-      <div className="p-3 flex flex-col gap-2">
-        <p className="text-sm font-bold leading-snug" style={{ color: C.text }}>{item.name}</p>
-        <div className="flex items-center justify-between gap-1">
-          {hasSizeOpts
-            ? <span className="text-xs font-medium" style={{ color: C.muted }}>${minPrice} 起</span>
-            : <span className="text-sm font-black" style={{ color: C.primary }}>${item.price}</span>
-          }
-          {!isSoldOut && (
-            <div onClick={handlePlus}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-xl font-bold transition-all duration-150 group-hover:scale-110 shrink-0"
-              style={{ background: qty > 0 ? C.primary : C.pill, color: qty > 0 ? '#fff' : C.primary }}>
-              ＋
-            </div>
+      {/* 右側：加減按鈕 */}
+      {!isSoldOut && (
+        <div className="flex items-center gap-2 shrink-0">
+          {qty > 0 && (
+            <>
+              <button onClick={e => { e.stopPropagation(); onMinus() }}
+                className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xl transition-all active:scale-90"
+                style={{ border: `2px solid ${C.border}`, background: '#fff', color: C.sub }}>
+                −
+              </button>
+              <span className="w-6 text-center text-base font-bold" style={{ color: C.text }}>{qty}</span>
+            </>
           )}
+          <button onClick={handlePlus}
+            className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-2xl transition-all active:scale-90"
+            style={{
+              background: qty > 0 ? C.pill    : C.primary,
+              color:      qty > 0 ? C.primary : '#fff',
+              border:     qty > 0 ? `2px solid ${C.primary}` : 'none',
+            }}>
+            ＋
+          </button>
         </div>
-        {qty > 0 && (
-          <div className="flex items-center justify-between rounded-xl p-1"
-            style={{ background: C.pill }}>
-            <button onClick={e => { e.stopPropagation(); onMinus() }}
-              className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-base transition active:scale-90"
-              style={{ background: '#fff', color: C.sub, border: `1px solid ${C.border}` }}>−</button>
-            <span className="text-sm font-black" style={{ color: C.text }}>{qty}</span>
-            <button onClick={handlePlus}
-              className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-base transition active:scale-90"
-              style={{ background: C.primary, color: '#fff' }}>＋</button>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   )
 }
@@ -346,8 +336,8 @@ function MenuContent() {
               <span style={{ borderLeft: `4px solid ${C.primary}`, paddingLeft: 10 }}>{activeCategory}</span>
             </h2>
           </div>
-          <div className="flex-1 overflow-y-auto p-5">
-            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))' }}>
+          <div className="flex-1 overflow-y-auto">
+            <div className="divide-y" style={{ borderColor: C.border }}>
               {enrichedItems.map(({ item, qty, isSoldOut, hasOpts, hasSizeOpts, minPrice }) => (
                 <ItemCard key={item.id}
                   item={item} qty={qty} isSoldOut={isSoldOut}
@@ -446,9 +436,9 @@ function MenuContent() {
           </div>
         </div>
 
-        {/* 品項 Grid */}
-        <div className="flex-1 p-4">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {/* 品項列表 */}
+        <div className="flex-1">
+          <div className="divide-y" style={{ borderColor: C.border }}>
             {enrichedItems.map(({ item, qty, isSoldOut, hasOpts, hasSizeOpts, minPrice }) => (
               <ItemCard key={item.id}
                 item={item} qty={qty} isSoldOut={isSoldOut}
