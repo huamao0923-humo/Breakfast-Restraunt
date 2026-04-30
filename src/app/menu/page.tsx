@@ -330,8 +330,9 @@ function MenuContent() {
                     background: isOn ? C.primary : 'rgba(0,0,0,0.08)',
                     color: isOn ? '#fff' : '#5C3A1A',
                     border: isOn ? 'none' : '1px solid rgba(0,0,0,0.12)',
-                    letterSpacing: '0.5em',
-                    padding: '0.625rem 1.75rem 0.625rem 1.25rem',
+                    letterSpacing: '0.2em',
+                    padding: '0.5rem 1.1rem 0.5rem 0.9rem',
+                    textAlign: 'center' as const,
                   }}>
                   {cat.category}
                 </button>
