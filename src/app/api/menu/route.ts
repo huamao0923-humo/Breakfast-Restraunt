@@ -47,9 +47,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    const [{ max_sort }] = await sql`
+      SELECT COALESCE(MAX(sort_order), -1) AS max_sort
+      FROM menu_items
+      WHERE category = ${category}
+    `
+    const nextSortOrder = Number(max_sort) + 1
+
     const [row] = await sql`
       INSERT INTO menu_items (id, category, name, price, options, sort_order)
-      VALUES (${id}, ${category}, ${name}, ${Number(price)}, ${options ?? []}, ${sort_order ?? 0})
+      VALUES (${id}, ${category}, ${name}, ${Number(price)}, ${options ?? []}, ${nextSortOrder})
       RETURNING *
     `
 
