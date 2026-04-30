@@ -141,7 +141,14 @@ function KitchenContent() {
                       <div key={i}
                         className="flex justify-between items-center py-2 border-b border-dashed last:border-b-0"
                         style={{ borderColor: 'rgba(0,0,0,0.15)' }}>
-                        <span className="text-[14px]" style={{ color: '#1C1C1E' }}>{item.name}</span>
+                        <div>
+                          <span className="text-[14px]" style={{ color: '#1C1C1E' }}>{item.name}</span>
+                          {Array.isArray(item.options) && item.options.length > 0 && (
+                            <p className="text-[12px] mt-0.5" style={{ color: '#7A5C3A' }}>
+                              {item.options.map((o: { label: string }) => o.label).join('・')}
+                            </p>
+                          )}
+                        </div>
                         <div className="flex items-center gap-3 shrink-0">
                           <span className="text-[13px] font-bold rounded-full px-2 py-0.5"
                             style={{ background: 'rgba(0,0,0,0.12)', color: '#3D2010' }}>

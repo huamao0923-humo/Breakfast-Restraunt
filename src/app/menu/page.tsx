@@ -5,7 +5,6 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useCart } from '@/hooks/useCart'
 import { OptionSheet } from '@/components/OptionSheet'
-import { TOPPING_CATEGORIES } from '@/lib/toppings'
 import type { MenuItem, CartItemOption, MenuCategory } from '@/types'
 
 export const dynamic = 'force-dynamic'
@@ -254,7 +253,7 @@ function MenuContent() {
   const enrichedItems = (activeCat?.items ?? []).map(item => {
     const qty         = getItemQty(item.id)
     const isSoldOut   = soldOut.includes(item.id)
-    const hasOpts     = item.options.length > 0 || TOPPING_CATEGORIES.has(activeCategory)
+    const hasOpts     = item.options.length > 0
     const hasSizeOpts = item.options.some(o => o.label.includes('杯'))
     const minPrice    = hasSizeOpts
       ? item.price + Math.min(0, ...item.options.filter(o => o.label.includes('杯')).map(o => o.price_delta))
@@ -432,7 +431,6 @@ function MenuContent() {
       {showOptions && (
         <OptionSheet
           item={showOptions}
-          showToppings={TOPPING_CATEGORIES.has(activeCategory)}
           onAdd={handleAddItem}
           onClose={() => setShowOptions(null)}
         />

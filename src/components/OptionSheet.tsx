@@ -2,12 +2,10 @@
 
 import { useState } from 'react'
 import type { MenuItem, CartItemOption } from '@/types'
-import { TOPPINGS } from '@/lib/toppings'
 import { TEMPERATURES } from '@/lib/temperature'
 
 interface OptionSheetProps {
   item: MenuItem
-  showToppings?: boolean
   onAdd: (options: CartItemOption[]) => void
   onClose: () => void
 }
@@ -25,28 +23,23 @@ const C = {
 // 虛擬 ID 代表「大杯（原價）」
 const LARGE_ID = '__large__'
 
-export function OptionSheet({ item, showToppings, onAdd, onClose }: OptionSheetProps) {
+export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
   // 拆分規格選項（含「杯」字）與一般客製選項
   const sizeOptions    = item.options.filter(o => o.label.includes('杯'))
   const regularOptions = item.options.filter(o => !o.label.includes('杯'))
   const hasSizeOpts    = sizeOptions.length > 0
 
   // 規格：單選，必選（無預設）
-  const [selectedSizeId, setSelectedSizeId]     = useState<string | null>(null)
+  const [selectedSizeId, setSelectedSizeId] = useState<string | null>(null)
   // 溫度：單選，必選（無預設）
-  const [selectedTempId, setSelectedTempId]     = useState<string | null>(null)
+  const [selectedTempId, setSelectedTempId] = useState<string | null>(null)
   // 一般客製：多選
-  const [selected, setSelected]                 = useState<string[]>([])
-  // 加配料：多選
-  const [selectedToppings, setSelectedToppings] = useState<string[]>([])
+  const [selected, setSelected] = useState<string[]>([])
 
-  if (item.options.length === 0 && !showToppings) return null
+  if (item.options.length === 0) return null
 
   const toggleRegular = (id: string) =>
     setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
-
-  const toggleTopping = (id: string) =>
-    setSelectedToppings(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
 
   // 飲料兩題都必選才能送出
   const canAdd = hasSizeOpts ? (selectedSizeId !== null && selectedTempId !== null) : true
@@ -62,9 +55,8 @@ export function OptionSheet({ item, showToppings, onAdd, onClose }: OptionSheetP
       ? TEMPERATURES.filter(t => t.id === selectedTempId)
       : []
 
-    const regularOpts  = regularOptions.filter(o => selected.includes(o.id))
-    const toppingOpts  = showToppings ? TOPPINGS.filter(t => selectedToppings.includes(t.id)) : []
-    onAdd([...sizeOpt, ...tempOpt, ...regularOpts, ...toppingOpts])
+    const regularOpts = regularOptions.filter(o => selected.includes(o.id))
+    onAdd([...sizeOpt, ...tempOpt, ...regularOpts])
     onClose()
   }
 
@@ -94,7 +86,6 @@ export function OptionSheet({ item, showToppings, onAdd, onClose }: OptionSheetP
         <span className="text-base font-bold" style={{ color: isSelected ? C.primaryD : C.sub }}>
           ${totalPrice}
         </span>
-        {/* Radio 圈 */}
         <div
           className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
           style={{
@@ -170,7 +161,6 @@ export function OptionSheet({ item, showToppings, onAdd, onClose }: OptionSheetP
         <div className="px-6 pb-4 border-b shrink-0" style={{ borderColor: C.border }}>
           <div className="flex justify-between items-baseline">
             <h3 className="text-xl font-bold" style={{ color: C.text }}>{item.name}</h3>
-            {/* 有規格選項時 header 不顯示固定價格 */}
             {!hasSizeOpts && (
               <span className="text-lg font-bold ml-4 shrink-0" style={{ color: C.primary }}>
                 ${item.price}
@@ -189,7 +179,6 @@ export function OptionSheet({ item, showToppings, onAdd, onClose }: OptionSheetP
                 選擇規格
               </p>
               <div className="space-y-2">
-                {/* 大杯（虛擬，代表原始定價） */}
                 <SizeRow
                   id={LARGE_ID}
                   label="大杯"
@@ -197,7 +186,6 @@ export function OptionSheet({ item, showToppings, onAdd, onClose }: OptionSheetP
                   selected={selectedSizeId === LARGE_ID}
                   onSelect={() => setSelectedSizeId(LARGE_ID)}
                 />
-                {/* 其他規格（小杯等） */}
                 {sizeOptions.map(opt => (
                   <SizeRow
                     key={opt.id}
@@ -249,7 +237,7 @@ export function OptionSheet({ item, showToppings, onAdd, onClose }: OptionSheetP
             </div>
           )}
 
-          {/* ── 一般客製選項（多選） ── */}
+          {/* ── 客製選項（多選） ── */}
           {regularOptions.length > 0 && (
             <div>
               <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: C.sub }}>
@@ -264,27 +252,6 @@ export function OptionSheet({ item, showToppings, onAdd, onClose }: OptionSheetP
                     priceDelta={opt.price_delta}
                     checked={selected.includes(opt.id)}
                     onToggle={() => toggleRegular(opt.id)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── 加配料（多選） ── */}
-          {showToppings && (
-            <div>
-              <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: C.sub }}>
-                加配料
-              </p>
-              <div className="space-y-2">
-                {TOPPINGS.map(t => (
-                  <CheckRow
-                    key={t.id}
-                    id={t.id}
-                    label={t.label}
-                    priceDelta={t.price_delta}
-                    checked={selectedToppings.includes(t.id)}
-                    onToggle={() => toggleTopping(t.id)}
                   />
                 ))}
               </div>
