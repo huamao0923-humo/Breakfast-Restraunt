@@ -87,7 +87,7 @@ function KitchenContent() {
       </div>
 
       {/* ── 訂單列表 ── */}
-      <div className="px-3 py-3 max-w-xl mx-auto" style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
+      <div className="px-4 py-4 max-w-2xl mx-auto" style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
         {activeOrders.length === 0 ? (
           <div className="flex flex-col items-center justify-center" style={{ height: '60vh' }}>
             <div className="text-5xl mb-4 opacity-40">🍳</div>
@@ -111,7 +111,7 @@ function KitchenContent() {
                   }}>
 
                   {/* Card Header */}
-                  <div className="px-4 py-3 flex justify-between items-center"
+                  <div className="px-6 py-4 flex justify-between items-center"
                     style={{ background: headerBg, borderBottom: '1px solid rgba(0,0,0,0.12)' }}>
                     <div className="flex items-center gap-2">
                       {order.table_id === 'takeout' ? (
@@ -136,7 +136,7 @@ function KitchenContent() {
                   </div>
 
                   {/* Items */}
-                  <div className="px-4 py-3">
+                  <div className="px-6 py-3">
                     {order.items.map((item, i) => (
                       <div key={i}
                         className="flex justify-between items-center py-2 border-b border-dashed last:border-b-0"
@@ -157,14 +157,14 @@ function KitchenContent() {
 
                   {/* Note */}
                   {order.note && (
-                    <div className="mx-4 mb-2 px-3 py-2 rounded-lg text-xs italic"
+                    <div className="mx-6 mb-2 px-4 py-2 rounded-lg text-xs italic"
                       style={{ background: 'rgba(255,255,255,0.35)', color: '#3D2010', border: '1px dashed rgba(0,0,0,0.2)' }}>
                       📝 {order.note}
                     </div>
                   )}
 
                   {/* Total */}
-                  <div className="flex justify-between items-center px-4 py-2.5 border-t"
+                  <div className="flex justify-between items-center px-6 py-3 border-t"
                     style={{ borderColor: 'rgba(0,0,0,0.12)' }}>
                     <span className="text-sm" style={{ color: '#5C3D2E' }}>合計</span>
                     <span className="text-base font-bold" style={{ color: '#1C1C1E' }}>${order.total}</span>
