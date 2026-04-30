@@ -28,6 +28,7 @@ export async function GET() {
         name: row.name,
         price: row.price,
         options: row.options ?? [],
+        sort_order: row.sort_order,
       })
     }
 

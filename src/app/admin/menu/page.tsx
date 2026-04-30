@@ -13,6 +13,7 @@ interface FormState {
   name: string
   price: string
   hasTemperature: boolean
+  sort_order?: number
   options: { id?: string; label: string; price_delta: string }[]
 }
 
@@ -183,6 +184,7 @@ export default function AdminMenuPage() {
       id: item.id, category, newCategory: '', name: item.name,
       price: String(item.price),
       hasTemperature: hasTempOpts,
+      sort_order: item.sort_order,
       options: nonTempOptions,
     })
     setEditingId(item.id)
@@ -229,7 +231,10 @@ export default function AdminMenuPage() {
         })),
         ...(form.hasTemperature ? TEMPERATURES : []),
       ] as MenuOption[],
-      sort_order: allItems.filter((i) => i.category === finalCategory).length + 1,
+      // 編輯時保留原始 sort_order；新增時由 server 端 MAX+1 決定
+      ...(editingId !== null && form.sort_order !== undefined
+        ? { sort_order: form.sort_order }
+        : {}),
     }
 
     setSaving(true); setError(null)

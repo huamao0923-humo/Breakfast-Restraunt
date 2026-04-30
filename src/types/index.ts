@@ -9,6 +9,7 @@ export interface MenuItem {
   name: string
   price: number
   options: MenuOption[]
+  sort_order?: number
 }
 
 export interface MenuCategory {
