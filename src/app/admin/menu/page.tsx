@@ -207,6 +207,26 @@ export default function AdminMenuPage() {
   const updateOption = (i: number, field: 'label' | 'price_delta', val: string) =>
     setForm((f) => { const opts = [...f.options]; opts[i] = { ...opts[i], [field]: val }; return { ...f, options: opts } })
 
+  // 選項拖移排序
+  const optDragging = useRef<number | null>(null)
+  const [optDragOver, setOptDragOver] = useState<number | null>(null)
+  const onOptDragStart = (e: React.DragEvent, i: number) => { optDragging.current = i; e.dataTransfer.effectAllowed = 'move' }
+  const onOptDragOver  = (e: React.DragEvent, i: number) => { e.preventDefault(); setOptDragOver(i) }
+  const onOptDrop      = (e: React.DragEvent, target: number) => {
+    e.preventDefault()
+    const src = optDragging.current
+    if (src === null || src === target) { setOptDragOver(null); return }
+    setForm(f => {
+      const opts = [...f.options]
+      const [moved] = opts.splice(src, 1)
+      opts.splice(target, 0, moved)
+      return { ...f, options: opts }
+    })
+    optDragging.current = null
+    setOptDragOver(null)
+  }
+  const onOptDragEnd = () => { optDragging.current = null; setOptDragOver(null) }
+
   // 即時重複 ID 檢查（編輯時，排除自身）
   const newIdTrimmed = form.id.trim()
   const isDuplicateId = !!editingId
@@ -595,7 +615,27 @@ export default function AdminMenuPage() {
                 ) : (
                   <div className="space-y-2">
                     {form.options.map((opt, i) => (
-                      <div key={i} className="flex gap-2 items-center">
+                      <div
+                        key={i}
+                        draggable
+                        onDragStart={(e) => onOptDragStart(e, i)}
+                        onDragOver={(e) => onOptDragOver(e, i)}
+                        onDrop={(e) => onOptDrop(e, i)}
+                        onDragEnd={onOptDragEnd}
+                        className="flex gap-2 items-center rounded-lg transition-all duration-100"
+                        style={{
+                          background: optDragOver === i ? '#FFF3E0' : 'transparent',
+                          borderLeft: optDragOver === i ? '3px solid #C67C3A' : '3px solid transparent',
+                          opacity: optDragging.current === i ? 0.4 : 1,
+                          paddingLeft: 2,
+                        }}
+                      >
+                        {/* 拖把手 */}
+                        <span
+                          className="text-base shrink-0 cursor-grab active:cursor-grabbing select-none"
+                          style={{ color: '#D4B896' }}
+                          title="拖移排序"
+                        >⠿</span>
                         <input type="text" value={opt.label}
                           onChange={(e) => updateOption(i, 'label', e.target.value)}
                           placeholder="選項名稱（如：加蛋）"
@@ -617,7 +657,7 @@ export default function AdminMenuPage() {
                         </button>
                       </div>
                     ))}
-                    <p className="text-xs" style={{ color: '#9C7A5A' }}>選項加價填 0 代表免費加點</p>
+                    <p className="text-xs" style={{ color: '#9C7A5A' }}>選項加價填 0 代表免費加點・拖移 ⠿ 可調整順序</p>
                   </div>
                 )}
               </div>
