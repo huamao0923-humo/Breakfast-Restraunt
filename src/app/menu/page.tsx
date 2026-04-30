@@ -10,18 +10,18 @@ import type { MenuItem, CartItemOption, MenuCategory } from '@/types'
 
 export const dynamic = 'force-dynamic'
 
-// ─── 主色系 ───────────────────────────────────────────────
 const C = {
-  bg:       '#F7F4F0',   // 頁面底色
-  card:     '#FFFFFF',   // 卡片白
-  header:   '#3D2B1F',   // 深棕 Header
-  primary:  '#D97706',   // 琥珀橘（主題色）
-  primaryD: '#B45309',   // 深一階（hover/active）
-  text:     '#1C1C1E',   // 主文字
-  sub:      '#6B6B6B',   // 次文字
-  muted:    '#AEAEB2',   // 灰文字
-  border:   '#E5E5EA',   // 分隔線
-  pill:     '#F0EBE3',   // 未選分類背景
+  bg:       '#F7F4F0',
+  sidebar:  '#FFFFFF',
+  card:     '#FFFFFF',
+  header:   '#3D2B1F',
+  primary:  '#D97706',
+  primaryD: '#B45309',
+  text:     '#1C1C1E',
+  sub:      '#6B6B6B',
+  muted:    '#AEAEB2',
+  border:   '#E5E5EA',
+  pill:     '#F0EBE3',
 }
 
 function MenuContent() {
@@ -35,13 +35,11 @@ function MenuContent() {
   const [soldOut, setSoldOut]               = useState<string[]>([])
   const [showOptions, setShowOptions]       = useState<MenuItem | null>(null)
   const [activeCategory, setActiveCategory] = useState('')
-  const [showConfirm, setShowConfirm]       = useState(false)
   const [orderNote, setOrderNote]           = useState('')
   const [submitting, setSubmitting]         = useState(false)
   const [submitted, setSubmitted]           = useState(false)
   const [pickupNumber, setPickupNumber]     = useState<number | null>(null)
   const [redirectingToPay, setRedirectingToPay] = useState(false)
-  // 送出成功後保留一份快照，讓成功畫面可以顯示品項
   const [snapshot, setSnapshot]             = useState<{ name: string; qty: number; price: number }[]>([])
   const [snapshotTotal, setSnapshotTotal]   = useState(0)
 
@@ -49,7 +47,7 @@ function MenuContent() {
 
   useEffect(() => {
     fetch('/api/menu')
-      .then((r) => r.json())
+      .then(r => r.json())
       .then((data: MenuCategory[]) => {
         setMenuData(data)
         if (data.length > 0) setActiveCategory(data[0].category)
@@ -71,7 +69,7 @@ function MenuContent() {
   }
 
   const getItemQty = (id: string) =>
-    items.filter((c) => c.id === id).reduce((s, c) => s + c.qty, 0)
+    items.filter(c => c.id === id).reduce((s, c) => s + c.qty, 0)
 
   const handleMinus = (itemId: string) => {
     const matched = items.map((c, i) => ({ c, i })).filter(({ c }) => c.id === itemId)
@@ -85,7 +83,7 @@ function MenuContent() {
     if (!items.length) return
     setSubmitting(true)
     try {
-      const formattedItems = items.map((i) => ({
+      const formattedItems = items.map(i => ({
         id: i.id, name: i.name, qty: i.qty,
         price: i.price + i.options.reduce((s, o) => s + o.price_delta, 0),
         options: i.options,
@@ -93,13 +91,15 @@ function MenuContent() {
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ table_id: table, items: formattedItems, total, note: orderNote || null, pickup_number: ticketNumber ?? undefined }),
+        body: JSON.stringify({
+          table_id: table, items: formattedItems, total,
+          note: orderNote || null,
+          pickup_number: ticketNumber ?? undefined,
+        }),
       })
       if (!res.ok) return
       const data = await res.json()
 
-      // 跳轉 LINE Pay
-      setShowConfirm(false)
       setRedirectingToPay(true)
       const productName = formattedItems.map(i => `${i.name}×${i.qty}`).join(', ')
       const payRes = await fetch('/api/linepay/request', {
@@ -122,12 +122,12 @@ function MenuContent() {
     }
   }
 
-  const activeCat = menuData.find((c) => c.category === activeCategory)
-  const totalQty  = items.reduce((s, i) => s + i.qty, 0)
+  const activeCat  = menuData.find(c => c.category === activeCategory)
+  const totalQty   = items.reduce((s, i) => s + i.qty, 0)
 
   if (menuLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen text-base font-sans"
+      <div className="flex items-center justify-center h-screen text-base font-sans"
         style={{ background: C.bg, color: C.muted }}>
         載入中…
       </div>
@@ -135,177 +135,292 @@ function MenuContent() {
   }
 
   return (
-    <div className="flex justify-center min-h-screen font-sans" style={{ background: C.bg }}>
-      <div className="w-full max-w-md flex flex-col relative"
-        style={{ background: C.card, minHeight: '100dvh' }}>
+    <div className="flex h-screen overflow-hidden font-sans" style={{ background: C.bg }}>
 
-        {/* ── Header ─────────────────────────────── */}
-        <div style={{ background: C.header }}>
-          <div className="px-5 pt-6 pb-4">
-            <h1 className="text-2xl font-bold text-center tracking-widest"
-              style={{ color: '#F5E6C8' }}>
-              忠國豆漿
-            </h1>
-            {table === 'takeout' && ticketNumber != null ? (
-              <div className="flex items-center justify-center gap-3 mt-1">
-                <span className="text-sm" style={{ color: '#C9A97A' }}>外帶</span>
-                <span
-                  className="text-2xl font-black leading-none px-3 py-0.5 rounded-xl"
-                  style={{ background: '#F5C842', color: '#3D2B1F' }}
-                >
-                  #{String(ticketNumber).padStart(3, '0')}
-                </span>
-                <span className="text-sm" style={{ color: '#C9A97A' }}>號</span>
-              </div>
-            ) : (
-              <p className="text-sm text-center mt-1" style={{ color: '#C9A97A' }}>
-                桌號 <span className="font-semibold">{table}</span>　·　手工現做
-              </p>
-            )}
-          </div>
+      {/* ── 左側：分類 Sidebar ──────────────────────────── */}
+      <aside className="flex flex-col shrink-0 border-r"
+        style={{ width: 200, background: C.sidebar, borderColor: C.border }}>
 
-          {/* ── 分類 Pill 列 ─────────────────────── */}
-          <div className="flex overflow-x-auto gap-2 whitespace-nowrap px-4 pb-3 scrollbar-none">
-            {menuData.map((cat) => {
-              const isOn = cat.category === activeCategory
+        {/* 店名 */}
+        <div className="px-5 py-5 border-b" style={{ borderColor: C.border, background: C.header }}>
+          <h1 className="text-lg font-black tracking-[4px]" style={{ color: '#F5E6C8' }}>忠國豆漿</h1>
+          <p className="text-xs mt-1 tracking-wide" style={{ color: '#C9A97A' }}>
+            {table === 'takeout'
+              ? ticketNumber != null
+                ? `外帶 #${String(ticketNumber).padStart(3, '0')}`
+                : '外帶'
+              : `${table} 桌・內用`}
+          </p>
+        </div>
+
+        {/* 分類按鈕 */}
+        <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+          {menuData.map(cat => {
+            const isOn = cat.category === activeCategory
+            return (
+              <button
+                key={cat.category}
+                onClick={() => setActiveCategory(cat.category)}
+                className="w-full text-left px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-150 active:scale-[0.98]"
+                style={{
+                  background:  isOn ? C.primary : 'transparent',
+                  color:       isOn ? '#fff'     : C.sub,
+                  fontWeight:  isOn ? 700 : 500,
+                  transform:   isOn ? 'translateX(2px)' : undefined,
+                  boxShadow:   isOn ? '0 4px 12px rgba(217,119,6,0.25)' : undefined,
+                }}
+              >
+                {cat.category}
+              </button>
+            )
+          })}
+        </nav>
+      </aside>
+
+      {/* ── 中間：品項 Grid ─────────────────────────────── */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <div className="px-6 py-4 border-b shrink-0" style={{ borderColor: C.border, background: C.sidebar }}>
+          <h2 className="text-xl font-bold" style={{ color: C.text }}>
+            <span style={{ borderLeft: `4px solid ${C.primary}`, paddingLeft: 10 }}>
+              {activeCategory}
+            </span>
+          </h2>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5">
+          <div className="grid gap-4"
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
+            {activeCat?.items.map(item => {
+              const qty         = getItemQty(item.id)
+              const isSoldOut   = soldOut.includes(item.id)
+              const hasOpts     = item.options.length > 0 || TOPPING_CATEGORIES.has(activeCategory)
+              const hasSizeOpts = item.options.some(o => o.label.includes('杯'))
+              const minPrice    = hasSizeOpts
+                ? item.price + Math.min(0, ...item.options.filter(o => o.label.includes('杯')).map(o => o.price_delta))
+                : item.price
+
               return (
-                <button
-                  key={cat.category}
-                  onClick={() => setActiveCategory(cat.category)}
-                  className="shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-150 active:scale-95"
+                <div
+                  key={item.id}
+                  onClick={() => {
+                    if (isSoldOut) return
+                    if (item.options.length === 0 && !TOPPING_CATEGORIES.has(activeCategory))
+                      addItem(item.id, item.name, item.price, [])
+                    else
+                      setShowOptions(item)
+                  }}
+                  className="flex flex-col rounded-2xl overflow-hidden border cursor-pointer transition-all duration-200 group"
                   style={{
-                    background: isOn ? C.primary : 'rgba(255,255,255,0.15)',
-                    color:      isOn ? '#fff'    : '#F5E6C8',
-                    border:     isOn ? 'none'    : '1px solid rgba(255,255,255,0.2)',
+                    background: C.card,
+                    borderColor: qty > 0 ? C.primary : C.border,
+                    boxShadow:   qty > 0
+                      ? `0 0 0 2px ${C.primary}40, 0 4px 16px rgba(217,119,6,0.12)`
+                      : '0 1px 4px rgba(0,0,0,0.06)',
+                    opacity: isSoldOut ? 0.5 : 1,
                   }}
                 >
-                  {cat.category}
-                </button>
+                  {/* 圖示區 */}
+                  <div
+                    className="flex items-center justify-center text-5xl relative transition-colors duration-200"
+                    style={{
+                      height: 100,
+                      background: qty > 0 ? '#FEF3C7' : C.pill,
+                      borderBottom: `1px solid ${C.border}`,
+                    }}
+                  >
+                    🍽️
+                    {/* 標籤 */}
+                    {isSoldOut && (
+                      <span className="absolute top-2 left-2 text-xs font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: '#F2F2F7', color: C.muted }}>售罄</span>
+                    )}
+                    {hasSizeOpts && !isSoldOut && (
+                      <span className="absolute top-2 left-2 text-xs font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: '#E0F2FE', color: '#0369A1' }}>選規格</span>
+                    )}
+                    {!hasSizeOpts && hasOpts && !isSoldOut && (
+                      <span className="absolute top-2 left-2 text-xs font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: '#FEF3C7', color: '#92400E' }}>可客製</span>
+                    )}
+                    {/* 數量徽章 */}
+                    {qty > 0 && (
+                      <span className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white"
+                        style={{ background: C.primary }}>
+                        {qty}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 資訊區 */}
+                  <div className="p-3 flex flex-col gap-2">
+                    <p className="text-sm font-bold leading-snug" style={{ color: C.text }}>{item.name}</p>
+                    <div className="flex items-center justify-between">
+                      {hasSizeOpts ? (
+                        <span className="text-xs font-medium" style={{ color: C.muted }}>${minPrice} 起</span>
+                      ) : (
+                        <span className="text-base font-black" style={{ color: C.primary }}>${item.price}</span>
+                      )}
+                      {/* ＋ 按鈕 */}
+                      {!isSoldOut && (
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-xl font-bold transition-all duration-200 group-hover:scale-110"
+                          style={{
+                            background: qty > 0 ? C.primary : C.pill,
+                            color:      qty > 0 ? '#fff'    : C.primary,
+                          }}
+                          onClick={e => {
+                            e.stopPropagation()
+                            if (item.options.length === 0 && !TOPPING_CATEGORIES.has(activeCategory))
+                              addItem(item.id, item.name, item.price, [])
+                            else
+                              setShowOptions(item)
+                          }}
+                        >
+                          ＋
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 加減控制（若已加入） */}
+                    {qty > 0 && (
+                      <div className="flex items-center justify-between mt-1 rounded-xl p-1"
+                        style={{ background: C.pill }}>
+                        <button
+                          onClick={e => { e.stopPropagation(); handleMinus(item.id) }}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-lg transition active:scale-90"
+                          style={{ background: '#fff', color: C.sub, border: `1px solid ${C.border}` }}>
+                          −
+                        </button>
+                        <span className="text-sm font-black" style={{ color: C.text }}>{qty}</span>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation()
+                            if (item.options.length === 0 && !TOPPING_CATEGORIES.has(activeCategory))
+                              addItem(item.id, item.name, item.price, [])
+                            else
+                              setShowOptions(item)
+                          }}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-lg transition active:scale-90"
+                          style={{ background: C.primary, color: '#fff' }}>
+                          ＋
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )
             })}
           </div>
         </div>
+      </main>
 
-        {/* ── 品項列表 ─────────────────────────────── */}
-        <div className="flex-1 divide-y" style={{
-          paddingBottom: 'calc(88px + env(safe-area-inset-bottom, 0px))',
-          borderColor: C.border,
-          '--tw-divide-opacity': '1',
-        } as React.CSSProperties}>
-          {activeCat?.items.map((item) => {
-            const qty          = getItemQty(item.id)
-            const isSoldOut    = soldOut.includes(item.id)
-            const hasOpts      = item.options.length > 0 || TOPPING_CATEGORIES.has(activeCategory)
-            // 有「杯」字選項代表以規格定價，列表不顯示基礎價
-            const hasSizeOpts  = item.options.some(o => o.label.includes('杯'))
-            // 規格最低價（小杯）
-            const minPrice     = hasSizeOpts
-              ? item.price + Math.min(0, ...item.options.filter(o => o.label.includes('杯')).map(o => o.price_delta))
-              : item.price
+      {/* ── 右側：購物車 Panel ──────────────────────────── */}
+      <aside className="flex flex-col shrink-0 border-l"
+        style={{ width: 320, background: C.sidebar, borderColor: C.border }}>
 
-            return (
-              <div key={item.id}
-                className="flex justify-between items-center py-5 px-5"
-                style={{ borderColor: C.border, opacity: isSoldOut ? 0.5 : 1 }}>
-
-                {/* 左側：名稱 */}
-                <div className="flex-1 pr-4 min-w-0">
-                  <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
-                    <span className="text-lg font-bold leading-snug"
-                      style={{ color: C.text }}>
-                      {item.name}
-                    </span>
-                    {isSoldOut && (
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full"
-                        style={{ background: '#F2F2F7', color: C.muted }}>
-                        售罄
-                      </span>
-                    )}
-                    {hasSizeOpts && !isSoldOut && (
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full"
-                        style={{ background: '#E0F2FE', color: '#0369A1' }}>
-                        選規格
-                      </span>
-                    )}
-                    {!hasSizeOpts && hasOpts && !isSoldOut && (
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full"
-                        style={{ background: '#FEF3C7', color: '#92400E' }}>
-                        可客製
-                      </span>
-                    )}
-                  </div>
-                  {hasSizeOpts ? (
-                    <span className="text-sm font-medium" style={{ color: C.muted }}>
-                      ${minPrice} 起
-                    </span>
-                  ) : (
-                    <span className="text-base font-semibold" style={{ color: C.primary }}>
-                      ${item.price}
-                    </span>
-                  )}
-                </div>
-
-                {/* 右側：加減按鈕 */}
-                {!isSoldOut && (
-                  <div className="flex items-center gap-2 shrink-0">
-                    {qty > 0 && (
-                      <>
-                        <button
-                          onClick={() => handleMinus(item.id)}
-                          className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xl transition-all active:scale-90"
-                          style={{ border: `2px solid ${C.border}`, background: '#fff', color: C.sub }}>
-                          −
-                        </button>
-                        <span className="w-6 text-center text-base font-bold"
-                          style={{ color: C.text }}>
-                          {qty}
-                        </span>
-                      </>
-                    )}
-                    <button
-                      onClick={() => {
-                        if (item.options.length === 0 && !TOPPING_CATEGORIES.has(activeCategory))
-                          addItem(item.id, item.name, item.price, [])
-                        else
-                          setShowOptions(item)
-                      }}
-                      className="w-11 h-11 rounded-full flex items-center justify-center font-bold text-2xl transition-all active:scale-90"
-                      style={{
-                        background: qty > 0 ? C.pill    : C.primary,
-                        color:      qty > 0 ? C.primary : '#fff',
-                        border:     qty > 0 ? `2px solid ${C.primary}` : 'none',
-                      }}>
-                      +
-                    </button>
-                  </div>
-                )}
-              </div>
-            )
-          })}
+        {/* Header */}
+        <div className="px-5 py-4 border-b flex justify-between items-center shrink-0"
+          style={{ borderColor: C.border }}>
+          <h2 className="text-base font-bold flex items-center gap-2" style={{ color: C.text }}>
+            🛒 購物車
+          </h2>
+          <span className="text-xs font-bold px-3 py-1 rounded-full"
+            style={{ background: totalQty > 0 ? '#FEF3C7' : C.pill, color: totalQty > 0 ? C.primaryD : C.muted, border: `1px solid ${totalQty > 0 ? C.primary : C.border}` }}>
+            {totalQty} 項
+          </span>
         </div>
 
-        {/* ── 底部查看訂單列 ────────────────────────── */}
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md p-4"
-          style={{
-            paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
-            background: 'rgba(255,255,255,0.92)',
-            backdropFilter: 'blur(12px)',
-            borderTop: `1px solid ${C.border}`,
-          }}>
-          <button
-            onClick={() => { if (totalQty > 0) setShowConfirm(true) }}
-            disabled={totalQty === 0}
-            className="w-full rounded-2xl flex justify-between items-center px-5 py-4 font-sans transition-all active:scale-[0.98] disabled:opacity-40"
-            style={{ background: totalQty > 0 ? C.primary : C.muted }}>
-            <span className="text-base font-bold text-white">查看訂單</span>
-            <span className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>
-              {totalQty} 樣　·　${total}
+        {/* 品項列表 */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {items.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full pb-10" style={{ color: C.muted }}>
+              <span className="text-5xl mb-4 opacity-40">🍽️</span>
+              <p className="text-sm font-medium">尚無餐點</p>
+              <p className="text-xs mt-1">請從左側菜單點選加入</p>
+            </div>
+          ) : (
+            items.map((item, idx) => {
+              const unitPrice = item.price + item.options.reduce((s, o) => s + o.price_delta, 0)
+              return (
+                <div key={idx} className="rounded-xl border p-3"
+                  style={{ background: C.card, borderColor: C.border, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1 pr-2">
+                      <p className="text-sm font-bold leading-snug" style={{ color: C.text }}>{item.name}</p>
+                      {item.options.length > 0 && (
+                        <p className="text-xs mt-0.5" style={{ color: C.sub }}>
+                          {item.options.map(o => o.label).join('・')}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-sm font-black shrink-0" style={{ color: C.primaryD }}>
+                      ${unitPrice * item.qty}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs" style={{ color: C.muted }}>單價 ${unitPrice}</span>
+                    <div className="flex items-center gap-1 rounded-lg p-0.5"
+                      style={{ background: C.pill, border: `1px solid ${C.border}` }}>
+                      <button
+                        onClick={() => handleMinus(item.id)}
+                        className="w-7 h-7 rounded-md flex items-center justify-center font-bold text-base transition active:scale-90"
+                        style={{ background: '#fff', color: C.sub, boxShadow: '0 1px 2px rgba(0,0,0,0.08)' }}>
+                        −
+                      </button>
+                      <span className="w-6 text-center text-sm font-black" style={{ color: C.text }}>
+                        {item.qty}
+                      </span>
+                      <button
+                        onClick={() => updateQty(idx, item.qty + 1)}
+                        className="w-7 h-7 rounded-md flex items-center justify-center font-bold text-base transition active:scale-90"
+                        style={{ background: C.primary, color: '#fff', boxShadow: '0 1px 2px rgba(0,0,0,0.08)' }}>
+                        ＋
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+
+        {/* 底部：備註＋合計＋結帳 */}
+        <div className="shrink-0 border-t p-4 space-y-3"
+          style={{ borderColor: C.border, paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
+          {/* 備註 */}
+          <input
+            type="text"
+            value={orderNote}
+            onChange={e => setOrderNote(e.target.value)}
+            placeholder="備註（例：不加蔥、少辣）"
+            className="w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none"
+            style={{ border: `1.5px solid ${C.border}`, background: C.bg, color: C.text, fontSize: 16 }}
+          />
+
+          {/* 合計 */}
+          <div className="flex justify-between items-end">
+            <span className="text-sm font-semibold" style={{ color: C.sub }}>結帳總計</span>
+            <span className="text-3xl font-black" style={{ color: '#DC2626' }}>
+              ${total.toLocaleString()}
             </span>
+          </div>
+
+          {/* 確認送出 */}
+          <button
+            onClick={handleSubmitOrder}
+            disabled={totalQty === 0 || submitting}
+            className="w-full rounded-xl py-4 text-base font-bold tracking-wide transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              background: totalQty > 0 ? C.primary : C.muted,
+              color: '#fff',
+              boxShadow: totalQty > 0 ? '0 8px 20px rgba(217,119,6,0.3)' : 'none',
+            }}>
+            {submitting ? '送出中…' : totalQty === 0 ? '購物車是空的' : '確認送出並付款'}
           </button>
         </div>
-      </div>
+      </aside>
 
-      {/* ── 選項 Sheet ──────────────────────────────── */}
+      {/* ── OptionSheet ─────────────────────────────────── */}
       {showOptions && (
         <OptionSheet
           item={showOptions}
@@ -315,104 +430,7 @@ function MenuContent() {
         />
       )}
 
-      {/* ── 確認訂單 Sheet ───────────────────────────── */}
-      {showConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center overlay-enter font-sans"
-          style={{ background: 'rgba(0,0,0,0.5)' }}
-          onClick={(e) => { if (e.target === e.currentTarget) setShowConfirm(false) }}
-        >
-          <div
-            className="w-full max-w-md rounded-t-3xl sheet-enter"
-            style={{ background: '#fff', paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}
-          >
-            {/* 拖曳條 */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-gray-200" />
-            </div>
-
-            {/* 標題列 */}
-            <div className="px-6 pt-3 pb-2 flex justify-between items-center">
-              <h2 className="text-xl font-bold" style={{ color: C.text }}>確認訂單</h2>
-              {table === 'takeout' && ticketNumber != null ? (
-                <span className="text-sm px-3 py-1 rounded-full font-bold"
-                  style={{ background: '#F5C842', color: '#3D2B1F' }}>
-                  外帶 #{String(ticketNumber).padStart(3, '0')}
-                </span>
-              ) : (
-                <span className="text-sm px-3 py-1 rounded-full font-medium"
-                  style={{ background: C.pill, color: C.sub }}>
-                  桌號 {table}
-                </span>
-              )}
-            </div>
-
-            {/* 品項清單 */}
-            <div className="px-6 max-h-[38vh] overflow-y-auto divide-y"
-              style={{ borderColor: C.border }}>
-              {items.map((item, i) => {
-                const unitPrice = item.price + item.options.reduce((s, o) => s + o.price_delta, 0)
-                return (
-                  <div key={i} className="flex justify-between items-start py-4">
-                    <div className="flex-1 pr-3">
-                      <p className="text-base font-semibold" style={{ color: C.text }}>{item.name}</p>
-                      {item.options.length > 0 && (
-                        <p className="text-sm mt-0.5" style={{ color: C.sub }}>
-                          {item.options.map((o) => o.label).join('、')}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm" style={{ color: C.muted }}>×{item.qty}</p>
-                      <p className="text-base font-bold" style={{ color: C.primaryD }}>
-                        ${unitPrice * item.qty}
-                      </p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* 合計 */}
-            <div className="flex justify-between items-center mx-6 py-4 border-t"
-              style={{ borderColor: C.border }}>
-              <span className="text-base font-semibold" style={{ color: C.text }}>合計</span>
-              <span className="text-2xl font-bold" style={{ color: C.primaryD }}>${total}</span>
-            </div>
-
-            {/* 備註 */}
-            <div className="px-6 mb-5">
-              <input
-                type="text"
-                value={orderNote}
-                onChange={(e) => setOrderNote(e.target.value)}
-                placeholder="備註（例：不加蔥、少辣）"
-                className="w-full rounded-xl px-4 py-3.5 text-base focus:outline-none"
-                style={{ border: `1.5px solid ${C.border}`, background: C.bg, color: C.text, fontSize: 16 }}
-              />
-            </div>
-
-            {/* 按鈕 */}
-            <div className="flex gap-3 px-6">
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="flex-1 py-4 rounded-2xl text-base font-bold transition-all active:scale-95"
-                style={{ border: `2px solid ${C.border}`, color: C.sub, background: '#fff' }}>
-                返回修改
-              </button>
-              <button
-                onClick={handleSubmitOrder}
-                disabled={submitting}
-                className="py-4 rounded-2xl text-base font-bold transition-all active:scale-[0.98] disabled:opacity-50"
-                style={{ flex: 2, background: C.primary, color: '#fff' }}>
-                {submitting ? '送出中…' : '確認送出'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── 導向 LINE Pay 中 ── */}
+      {/* ── LINE Pay 跳轉 spinner ────────────────────────── */}
       {redirectingToPay && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center font-sans"
           style={{ background: 'rgba(0,0,0,0.75)' }}>
@@ -438,31 +456,18 @@ function MenuContent() {
       {submitted && table === 'takeout' && (
         <div className="fixed inset-0 z-50 flex flex-col font-sans overlay-enter"
           style={{ background: C.header }}>
-
-          {/* 頂部裝飾條 */}
           <div className="h-2 w-full" style={{ background: C.primary }} />
-
           <div className="flex-1 overflow-y-auto flex flex-col items-center px-6 py-8">
-
-            {/* 店名 */}
             <p className="text-sm tracking-[4px] mb-1" style={{ color: '#C9A97A' }}>忠國豆漿</p>
             <p className="text-xs tracking-[2px] mb-8" style={{ color: '#7A5240' }}>外帶取餐號碼單</p>
-
-            {/* 取餐號碼 大字 */}
             <div className="w-full max-w-xs rounded-3xl flex flex-col items-center py-8 mb-8 pop-in"
               style={{ background: C.primary, boxShadow: '0 8px 32px rgba(217,119,6,0.4)' }}>
-              <p className="text-sm font-semibold tracking-[3px] mb-2" style={{ color: 'rgba(255,255,255,0.75)' }}>
-                取餐號碼
-              </p>
+              <p className="text-sm font-semibold tracking-[3px] mb-2" style={{ color: 'rgba(255,255,255,0.75)' }}>取餐號碼</p>
               <p className="font-black leading-none" style={{ color: '#fff', fontSize: 96 }}>
                 {pickupNumber !== null ? String(pickupNumber).padStart(3, '0') : '---'}
               </p>
-              <p className="text-xs mt-3" style={{ color: 'rgba(255,255,255,0.6)' }}>
-                聽到叫號請至櫃台取餐
-              </p>
+              <p className="text-xs mt-3" style={{ color: 'rgba(255,255,255,0.6)' }}>聽到叫號請至櫃台取餐</p>
             </div>
-
-            {/* 訂單明細 */}
             <div className="w-full max-w-xs rounded-2xl overflow-hidden mb-6"
               style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
               <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
@@ -472,17 +477,11 @@ function MenuContent() {
                 {snapshot.map((item, i) => (
                   <div key={i} className="flex justify-between items-center py-2.5 border-b last:border-b-0"
                     style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-                    <span className="text-sm" style={{ color: '#F5E6C8' }}>
-                      {item.name}
-                    </span>
+                    <span className="text-sm" style={{ color: '#F5E6C8' }}>{item.name}</span>
                     <div className="flex items-center gap-3 shrink-0">
                       <span className="text-sm font-semibold px-2 py-0.5 rounded-full"
-                        style={{ background: 'rgba(255,255,255,0.1)', color: '#C9A97A' }}>
-                        ×{item.qty}
-                      </span>
-                      <span className="text-sm font-bold" style={{ color: '#F5E6C8' }}>
-                        ${item.price * item.qty}
-                      </span>
+                        style={{ background: 'rgba(255,255,255,0.1)', color: '#C9A97A' }}>×{item.qty}</span>
+                      <span className="text-sm font-bold" style={{ color: '#F5E6C8' }}>${item.price * item.qty}</span>
                     </div>
                   </div>
                 ))}
@@ -493,14 +492,8 @@ function MenuContent() {
                 <span className="text-base font-bold" style={{ color: '#F5E6C8' }}>${snapshotTotal}</span>
               </div>
             </div>
-
-            <p className="text-xs text-center" style={{ color: '#5C3D2E' }}>
-              請保管好此號碼，叫號後 3 分鐘未取視為棄單
-            </p>
           </div>
-
-          {/* 底部：完成按鈕 */}
-          <div className="px-6 pb-safe"
+          <div className="px-6"
             style={{ paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', paddingTop: 12,
               background: 'rgba(0,0,0,0.3)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
             <button
@@ -519,7 +512,7 @@ function MenuContent() {
 export default function MenuPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen text-base font-sans"
+      <div className="flex items-center justify-center h-screen text-base font-sans"
         style={{ background: '#F7F4F0', color: '#AEAEB2' }}>
         載入中…
       </div>
