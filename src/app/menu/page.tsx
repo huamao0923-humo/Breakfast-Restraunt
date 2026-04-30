@@ -112,7 +112,7 @@ function CartRow({ item, idx, onMinus, onPlus, onEdit, hasOpts }: {
             {hasOpts && onEdit && (
               <button
                 onClick={onEdit}
-                className="text-[11px] px-2 py-0.5 rounded-full transition active:scale-95 shrink-0"
+                className="text-xs px-3 py-1 rounded-full transition active:scale-95 shrink-0"
                 style={{ background: '#FEF3C7', color: C.primaryD, border: `1px solid #FCD34D` }}>
                 編輯
               </button>
