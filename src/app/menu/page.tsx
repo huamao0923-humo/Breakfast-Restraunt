@@ -97,16 +97,27 @@ function ItemCard({
 }
 
 // ── 共用：購物車品項列 ────────────────────────────────────
-function CartRow({ item, idx, onMinus, onPlus }: {
+function CartRow({ item, idx, onMinus, onPlus, onEdit, hasOpts }: {
   item: { name: string; price: number; qty: number; options: { label: string; price_delta: number }[] }
   idx: number; onMinus: () => void; onPlus: () => void
+  onEdit?: () => void; hasOpts?: boolean
 }) {
   const unitPrice = item.price + item.options.reduce((s, o) => s + o.price_delta, 0)
   return (
     <div className="rounded-xl border p-3" style={{ background: C.card, borderColor: C.border }}>
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1 pr-2">
-          <p className="text-sm font-bold leading-snug" style={{ color: C.text }}>{item.name}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-bold leading-snug" style={{ color: C.text }}>{item.name}</p>
+            {hasOpts && onEdit && (
+              <button
+                onClick={onEdit}
+                className="text-[11px] px-2 py-0.5 rounded-full transition active:scale-95 shrink-0"
+                style={{ background: '#FEF3C7', color: C.primaryD, border: `1px solid #FCD34D` }}>
+                編輯
+              </button>
+            )}
+          </div>
           {item.options.length > 0 && (
             <p className="text-xs mt-0.5" style={{ color: C.sub }}>
               {item.options.map(o => o.label).join('・')}
@@ -152,8 +163,9 @@ function MenuContent() {
   const [orderNote, setOrderNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [receipt, setReceipt]     = useState<ReceiptData | null>(null)
+  const [editingCartIdx, setEditingCartIdx] = useState<number | null>(null)
 
-  const { items, addItem, removeItem, updateQty, clearCart, total } = useCart()
+  const { items, addItem, removeItem, updateQty, replaceOptions, clearCart, total } = useCart()
 
   useEffect(() => {
     fetch('/api/menu')
@@ -174,7 +186,12 @@ function MenuContent() {
 
   const handleAddItem = (options: CartItemOption[]) => {
     if (!showOptions) return
-    addItem(showOptions.id, showOptions.name, showOptions.price, options)
+    if (editingCartIdx !== null) {
+      replaceOptions(editingCartIdx, options)
+      setEditingCartIdx(null)
+    } else {
+      addItem(showOptions.id, showOptions.name, showOptions.price, options)
+    }
     setShowOptions(null)
   }
 
@@ -379,12 +396,22 @@ function MenuContent() {
             </div>
             {/* 品項列表 */}
             <div className="flex-1 overflow-y-auto px-6 space-y-3 pb-2">
-              {items.map((item, idx) => (
-                <CartRow key={idx} item={item} idx={idx}
-                  onMinus={() => handleMinus(item.id)}
-                  onPlus={() => updateQty(idx, item.qty + 1)}
-                />
-              ))}
+              {items.map((item, idx) => {
+                const menuItem = menuData.flatMap(c => c.items).find(m => m.id === item.id)
+                const hasOpts = (menuItem?.options?.length ?? 0) > 0
+                return (
+                  <CartRow key={idx} item={item} idx={idx}
+                    onMinus={() => handleMinus(item.id)}
+                    onPlus={() => updateQty(idx, item.qty + 1)}
+                    hasOpts={hasOpts}
+                    onEdit={() => {
+                      if (!menuItem) return
+                      setEditingCartIdx(idx)
+                      setShowOptions(menuItem)
+                    }}
+                  />
+                )
+              })}
             </div>
             <div className="px-6">
               <CartFooter />
@@ -398,7 +425,7 @@ function MenuContent() {
         <OptionSheet
           item={showOptions}
           onAdd={handleAddItem}
-          onClose={() => setShowOptions(null)}
+          onClose={() => { setShowOptions(null); setEditingCartIdx(null) }}
         />
       )}
 

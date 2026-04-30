@@ -47,6 +47,12 @@ export function useCart() {
     )
   }, [removeItem])
 
+  const replaceOptions = useCallback((index: number, options: CartItemOption[]) => {
+    setItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, options } : item))
+    )
+  }, [])
+
   const clearCart = useCallback(() => {
     setItems([])
   }, [])
@@ -61,6 +67,7 @@ export function useCart() {
     addItem,
     removeItem,
     updateQty,
+    replaceOptions,
     clearCart,
     total,
   }
