@@ -51,25 +51,25 @@ function KitchenContent() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen"
-        style={{ background: '#967969', color: '#F5EDE3', fontFamily: "'Noto Serif TC', serif", fontSize: 16 }}>
+        style={{ background: '#C3B091', color: '#3D2010', fontFamily: "'Noto Serif TC', serif", fontSize: 16 }}>
         載入中…
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#967969', fontFamily: "'Noto Serif TC', serif" }}>
+    <div className="min-h-screen" style={{ background: '#C3B091', fontFamily: "'Noto Serif TC', serif" }}>
 
       {/* ── Header ── */}
       <div className="sticky top-0 z-10 flex justify-between items-center px-4 py-3 border-b"
         style={{
-          background: '#7A5C4A',
+          background: '#A8926E',
           backdropFilter: 'blur(8px)',
-          borderColor: '#5C3D2E',
+          borderColor: '#8C7455',
           paddingTop: 'calc(12px + env(safe-area-inset-top, 0px))',
         }}>
         <div className="flex items-center gap-3">
-          <h1 className="text-base font-bold tracking-[4px]" style={{ color: '#F5EDE3' }}>
+          <h1 className="text-base font-bold tracking-[4px]" style={{ color: '#3D2010' }}>
             廚房出單
           </h1>
           {activeOrders.length > 0 && (
@@ -82,7 +82,7 @@ function KitchenContent() {
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full inline-block"
             style={{ background: '#6EE7B7', animation: 'pulse 2s infinite' }} />
-          <span className="text-xs tracking-wide" style={{ color: '#E8D5C4' }}>即時同步中</span>
+          <span className="text-xs tracking-wide" style={{ color: '#3D2010' }}>即時同步中</span>
         </div>
       </div>
 
@@ -91,14 +91,14 @@ function KitchenContent() {
         {activeOrders.length === 0 ? (
           <div className="flex flex-col items-center justify-center" style={{ height: '60vh' }}>
             <div className="text-5xl mb-4 opacity-40">🍳</div>
-            <p className="text-sm tracking-widest" style={{ color: '#F5EDE3' }}>目前沒有待處理訂單</p>
+            <p className="text-sm tracking-widest" style={{ color: '#3D2010' }}>目前沒有待處理訂單</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {activeOrders.map((order, idx) => {
               const isOdd = (idx + 1) % 2 !== 0   // 單號
-              const cardBg = isOdd ? '#D2B48C' : '#C3B091'
-              const headerBg = isOdd ? '#C4A07A' : '#B5A080'
+              const cardBg = isOdd ? '#F5DEB3' : '#FFF8DC'
+              const headerBg = isOdd ? '#E8C98A' : '#F0E8B0'
               const isNew = idx === 0
               return (
                 <div key={order.id}
@@ -125,7 +125,7 @@ function KitchenContent() {
                       )}
                       {isNew && (
                         <span className="text-[10px] rounded-full px-2 py-0.5 font-bold tracking-wide"
-                          style={{ background: '#7A5C4A', color: '#F5EDE3' }}>
+                          style={{ background: '#8C7455', color: '#FFF8DC' }}>
                           新單
                         </span>
                       )}
@@ -175,8 +175,8 @@ function KitchenContent() {
                     onClick={() => markDone(order.id)}
                     className="w-full font-bold tracking-[3px] transition-all active:scale-[0.98]"
                     style={{
-                      background: '#7A5C4A',
-                      color: '#F5EDE3',
+                      background: '#A8926E',
+                      color: '#fff',
                       fontFamily: "'Noto Serif TC', serif",
                       fontSize: 14,
                       padding: '14px 0',
@@ -200,7 +200,7 @@ export default function KitchenPage() {
   return (
     <Suspense fallback={
       <div className="flex items-center justify-center h-screen"
-        style={{ background: '#967969', color: '#F5EDE3', fontFamily: "'Noto Serif TC', serif" }}>
+        style={{ background: '#C3B091', color: '#3D2010', fontFamily: "'Noto Serif TC', serif" }}>
         載入中…
       </div>
     }>
