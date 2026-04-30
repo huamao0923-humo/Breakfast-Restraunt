@@ -325,11 +325,13 @@ function MenuContent() {
               return (
                 <button key={cat.category}
                   onClick={() => setActiveCategory(cat.category)}
-                  className="shrink-0 rounded-full px-5 py-2.5 text-base font-semibold transition-all duration-150 active:scale-95"
+                  className="shrink-0 rounded-full text-base font-semibold transition-all duration-150 active:scale-95"
                   style={{
                     background: isOn ? C.primary : 'rgba(0,0,0,0.08)',
                     color: isOn ? '#fff' : '#5C3A1A',
                     border: isOn ? 'none' : '1px solid rgba(0,0,0,0.12)',
+                    letterSpacing: '0.5em',
+                    padding: '0.625rem 1.75rem 0.625rem 1.25rem',
                   }}>
                   {cat.category}
                 </button>
