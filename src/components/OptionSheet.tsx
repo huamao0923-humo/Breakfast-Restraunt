@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { MenuItem, CartItemOption } from '@/types'
 import { TOPPINGS } from '@/lib/toppings'
+import { TEMPERATURES } from '@/lib/temperature'
 
 interface OptionSheetProps {
   item: MenuItem
@@ -31,9 +32,11 @@ export function OptionSheet({ item, showToppings, onAdd, onClose }: OptionSheetP
   const hasSizeOpts    = sizeOptions.length > 0
 
   // 規格：單選，預設大杯
-  const [selectedSizeId, setSelectedSizeId] = useState<string>(LARGE_ID)
+  const [selectedSizeId, setSelectedSizeId]     = useState<string>(LARGE_ID)
+  // 溫度：單選，預設冰的（只有飲料才顯示）
+  const [selectedTempId, setSelectedTempId]     = useState<string>(TEMPERATURES[0].id)
   // 一般客製：多選
-  const [selected, setSelected]             = useState<string[]>([])
+  const [selected, setSelected]                 = useState<string[]>([])
   // 加配料：多選
   const [selectedToppings, setSelectedToppings] = useState<string[]>([])
 
@@ -46,15 +49,18 @@ export function OptionSheet({ item, showToppings, onAdd, onClose }: OptionSheetP
     setSelectedToppings(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
 
   const handleAdd = () => {
-    // 規格：選大杯不附加 option，選小杯附加對應 option
     const sizeOpt: CartItemOption[] =
       hasSizeOpts && selectedSizeId !== LARGE_ID
         ? sizeOptions.filter(o => o.id === selectedSizeId)
         : []
 
+    const tempOpt: CartItemOption[] = hasSizeOpts
+      ? TEMPERATURES.filter(t => t.id === selectedTempId)
+      : []
+
     const regularOpts  = regularOptions.filter(o => selected.includes(o.id))
     const toppingOpts  = showToppings ? TOPPINGS.filter(t => selectedToppings.includes(t.id)) : []
-    onAdd([...sizeOpt, ...regularOpts, ...toppingOpts])
+    onAdd([...sizeOpt, ...tempOpt, ...regularOpts, ...toppingOpts])
     onClose()
   }
 
@@ -198,6 +204,43 @@ export function OptionSheet({ item, showToppings, onAdd, onClose }: OptionSheetP
                     onSelect={() => setSelectedSizeId(opt.id)}
                   />
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── 溫度（冰/溫/熱）單選，僅飲料顯示 ── */}
+          {hasSizeOpts && (
+            <div>
+              <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: C.sub }}>
+                選擇溫度
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {TEMPERATURES.map(t => {
+                  const isOn = selectedTempId === t.id
+                  const emoji = t.id === 'temp_ice' ? '🧊' : t.id === 'temp_warm' ? '🌤️' : '🔥'
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => setSelectedTempId(t.id)}
+                      className="flex flex-col items-center justify-center gap-1.5 rounded-2xl py-4 transition-all active:scale-[0.97]"
+                      style={{
+                        background: isOn ? '#FEF3C7' : C.pill,
+                        border: `2px solid ${isOn ? C.primary : 'transparent'}`,
+                      }}
+                    >
+                      <span className="text-2xl">{emoji}</span>
+                      <span className="text-sm font-semibold" style={{ color: isOn ? C.primaryD : C.text }}>
+                        {t.label}
+                      </span>
+                      {isOn && (
+                        <div className="w-4 h-4 rounded-full flex items-center justify-center"
+                          style={{ background: C.primary }}>
+                          <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}
