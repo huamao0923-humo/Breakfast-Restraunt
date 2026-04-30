@@ -8,18 +8,29 @@ export async function PUT(
   try {
     const body = await request.json()
     const { id } = await params
-    const { category, name, price, options, sort_order } = body
+    const { id: newId, category, name, price, options, sort_order } = body
 
     if (!category || !name || price === undefined) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    // If the ID is being changed, verify the new ID is not already taken
+    if (newId && newId !== id) {
+      const [{ exists }] = await sql`
+        SELECT EXISTS(SELECT 1 FROM menu_items WHERE id = ${newId}) AS exists
+      `
+      if (exists) {
+        return NextResponse.json({ error: `ID「${newId}」已被其他品項使用` }, { status: 409 })
+      }
+    }
+
     const [row] = await sql`
       UPDATE menu_items
-      SET category = ${category},
-          name = ${name},
-          price = ${Number(price)},
-          options = ${options ?? []},
+      SET id       = ${newId ?? id},
+          category = ${category},
+          name     = ${name},
+          price    = ${Number(price)},
+          options  = ${options ?? []},
           sort_order = ${sort_order ?? 0}
       WHERE id = ${id}
       RETURNING *

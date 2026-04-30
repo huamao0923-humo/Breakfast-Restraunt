@@ -197,19 +197,26 @@ export default function AdminMenuPage() {
   const updateOption = (i: number, field: 'label' | 'price_delta', val: string) =>
     setForm((f) => { const opts = [...f.options]; opts[i] = { ...opts[i], [field]: val }; return { ...f, options: opts } })
 
+  // 即時重複 ID 檢查（編輯時，排除自身）
+  const newIdTrimmed = form.id.trim()
+  const isDuplicateId = !!editingId
+    && newIdTrimmed !== editingId
+    && allItems.some((i) => i.id === newIdTrimmed)
+
   // ── 儲存品項 ─────────────────────────────────────────────
   const handleSave = async () => {
     const finalCategory = form.category === '__new__' ? form.newCategory.trim() : form.category
-    if (!form.id.trim())     { setError('請填入品項 ID'); return }
-    if (!finalCategory)      { setError('請填入分類名稱'); return }
-    if (!form.name.trim())   { setError('請填入品項名稱'); return }
+    if (!newIdTrimmed)     { setError('請填入品項 ID'); return }
+    if (isDuplicateId)     { setError(`ID「${newIdTrimmed}」已被其他品項使用，請更換`); return }
+    if (!finalCategory)   { setError('請填入分類名稱'); return }
+    if (!form.name.trim()) { setError('請填入品項名稱'); return }
     if (isNaN(Number(form.price))) { setError('請填入有效價格'); return }
 
     const payload = {
-      id: form.id.trim(), category: finalCategory, name: form.name.trim(),
+      id: newIdTrimmed, category: finalCategory, name: form.name.trim(),
       price: Number(form.price),
       options: form.options.filter((o) => o.label.trim()).map((o, i) => ({
-        id: `OPT_${form.id}_${i}`, label: o.label.trim(), price_delta: Number(o.price_delta) || 0,
+        id: `OPT_${newIdTrimmed}_${i}`, label: o.label.trim(), price_delta: Number(o.price_delta) || 0,
       })) as MenuOption[],
       sort_order: allItems.filter((i) => i.category === finalCategory).length + 1,
     }
@@ -492,11 +499,20 @@ export default function AdminMenuPage() {
                 </label>
                 <input type="text" value={form.id}
                   onChange={(e) => setForm((f) => ({ ...f, id: e.target.value.toUpperCase() }))}
-                  disabled={!!editingId}
                   placeholder="例如：B04"
-                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none font-mono disabled:opacity-50"
-                  style={{ borderColor: '#D4B896', color: '#3D2B1F', background: editingId ? '#F5EFE6' : '#FFFDF7', fontSize: 16 }}
+                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none font-mono"
+                  style={{
+                    borderColor: isDuplicateId ? '#E8BABA' : '#D4B896',
+                    color: '#3D2B1F',
+                    background: isDuplicateId ? '#FFF5F5' : '#FFFDF7',
+                    fontSize: 16,
+                  }}
                 />
+                {isDuplicateId && (
+                  <p className="text-xs mt-1 font-medium" style={{ color: '#A32D2D' }}>
+                    ⚠ ID「{newIdTrimmed}」已被其他品項使用，請更換
+                  </p>
+                )}
               </div>
 
               {/* 名稱 */}
@@ -574,7 +590,7 @@ export default function AdminMenuPage() {
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}>
                 取消
               </button>
-              <button onClick={handleSave} disabled={saving}
+              <button onClick={handleSave} disabled={saving || isDuplicateId}
                 className="px-5 py-2 rounded-lg text-sm font-semibold transition disabled:opacity-40"
                 style={{ background: '#C67C3A', color: '#FFFDF7' }}>
                 {saving ? '儲存中...' : (editingId ? '儲存變更' : '新增品項')}
