@@ -355,8 +355,9 @@ function MenuContent() {
       </div>
 
       {/* ── Mobile 底部 Cart Bar ─────────────────────────── */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 z-30" style={{ width: '100%', maxWidth: 680 }}
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 z-30"
         style={{
+          width: '100%', maxWidth: 680,
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           background: 'rgba(255,255,255,0.95)',
           backdropFilter: 'blur(12px)',
