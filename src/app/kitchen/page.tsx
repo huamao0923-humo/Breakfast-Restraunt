@@ -17,6 +17,8 @@ function KitchenContent() {
   const [orders, setOrders] = useState<Order[]>([])
   const [done, setDone] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [cancelConfirm, setCancelConfirm] = useState<string | null>(null)
+  const [cancelling, setCancelling] = useState(false)
 
   useEffect(() => {
     fetch('/api/orders?mode=kitchen')
@@ -46,7 +48,22 @@ function KitchenContent() {
   const markDone = (id: string) =>
     setDone((prev) => new Set([...prev, id]))
 
-  const activeOrders = orders.filter((o) => !done.has(o.id) && o.status !== 'completed')
+  const cancelOrder = async (id: string) => {
+    setCancelling(true)
+    try {
+      await fetch(`/api/orders/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' }),
+      })
+      setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status: 'cancelled' } : o))
+    } finally {
+      setCancelling(false)
+      setCancelConfirm(null)
+    }
+  }
+
+  const activeOrders = orders.filter((o) => !done.has(o.id) && o.status !== 'completed' && o.status !== 'cancelled')
 
   if (loading) {
     return (
@@ -177,28 +194,78 @@ function KitchenContent() {
                     <span className="text-base font-bold" style={{ color: '#1C1C1E' }}>${order.total}</span>
                   </div>
 
-                  {/* Done Button */}
-                  <button
-                    onClick={() => markDone(order.id)}
-                    className="w-full font-bold tracking-[3px] transition-all active:scale-[0.98]"
-                    style={{
-                      background: '#A8926E',
-                      color: '#fff',
-                      fontFamily: "'Noto Serif TC', serif",
-                      fontSize: 14,
-                      padding: '14px 0',
-                      border: 'none',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    完成出餐  ✓
-                  </button>
+                  {/* Action Buttons */}
+                  <div className="flex">
+                    <button
+                      onClick={() => setCancelConfirm(order.id)}
+                      className="font-bold tracking-[2px] transition-all active:scale-[0.98]"
+                      style={{
+                        flex: 1,
+                        background: 'rgba(0,0,0,0.08)',
+                        color: '#5C3010',
+                        fontFamily: "'Noto Serif TC', serif",
+                        fontSize: 13,
+                        padding: '14px 0',
+                        border: 'none',
+                        cursor: 'pointer',
+                        borderRight: '1px solid rgba(0,0,0,0.1)',
+                      }}
+                    >
+                      取消訂單
+                    </button>
+                    <button
+                      onClick={() => markDone(order.id)}
+                      className="font-bold tracking-[3px] transition-all active:scale-[0.98]"
+                      style={{
+                        flex: 2,
+                        background: '#A8926E',
+                        color: '#fff',
+                        fontFamily: "'Noto Serif TC', serif",
+                        fontSize: 14,
+                        padding: '14px 0',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      完成出餐  ✓
+                    </button>
+                  </div>
                 </div>
               )
             })}
           </div>
         )}
       </div>
+
+      {/* ── 取消確認彈窗 ── */}
+      {cancelConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6"
+          style={{ background: 'rgba(0,0,0,0.55)' }}>
+          <div className="w-full max-w-xs rounded-2xl overflow-hidden shadow-2xl"
+            style={{ background: '#FFF8DC', fontFamily: "'Noto Serif TC', serif" }}>
+            <div className="px-6 pt-6 pb-4 text-center">
+              <p className="text-lg font-bold mb-2" style={{ color: '#3D2010' }}>確認取消訂單？</p>
+              <p className="text-sm" style={{ color: '#7A5240' }}>此訂單將從廚房移除，無法復原</p>
+            </div>
+            <div className="flex border-t" style={{ borderColor: 'rgba(0,0,0,0.1)' }}>
+              <button
+                onClick={() => setCancelConfirm(null)}
+                disabled={cancelling}
+                className="flex-1 py-4 text-sm font-semibold transition-all active:scale-95"
+                style={{ color: '#7A5240', borderRight: '1px solid rgba(0,0,0,0.1)', background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                返回
+              </button>
+              <button
+                onClick={() => cancelOrder(cancelConfirm)}
+                disabled={cancelling}
+                className="flex-1 py-4 text-sm font-bold transition-all active:scale-95"
+                style={{ color: '#fff', background: '#A0522D', border: 'none', cursor: 'pointer' }}>
+                {cancelling ? '取消中…' : '確認取消'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
