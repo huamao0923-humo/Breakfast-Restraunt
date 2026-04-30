@@ -14,7 +14,7 @@ const C = {
   bg:       '#F7F4F0',
   sidebar:  '#FFFFFF',
   card:     '#FFFFFF',
-  header:   '#3D2B1F',
+  header:   '#FFDDA9',
   primary:  '#D97706',
   primaryD: '#B45309',
   text:     '#1C1C1E',
@@ -299,20 +299,20 @@ function MenuContent() {
         {/* Header */}
         <div style={{ background: C.header }}>
           <div className="px-5 pt-5 pb-3">
-            <h1 className="text-xl font-bold text-center tracking-widest" style={{ color: '#F5E6C8' }}>
+            <h1 className="text-xl font-bold text-center tracking-widest" style={{ color: '#3D2B1F' }}>
               忠國豆漿
             </h1>
             {table === 'takeout' && ticketNumber != null ? (
               <div className="flex items-center justify-center gap-2 mt-1">
-                <span className="text-sm" style={{ color: '#C9A97A' }}>外帶</span>
+                <span className="text-sm" style={{ color: '#7A4F2A' }}>外帶</span>
                 <span className="text-xl font-black px-3 py-0.5 rounded-xl"
                   style={{ background: '#F5C842', color: '#3D2B1F' }}>
                   #{String(ticketNumber).padStart(3, '0')}
                 </span>
-                <span className="text-sm" style={{ color: '#C9A97A' }}>號</span>
+                <span className="text-sm" style={{ color: '#7A4F2A' }}>號</span>
               </div>
             ) : (
-              <p className="text-sm text-center mt-1" style={{ color: '#C9A97A' }}>
+              <p className="text-sm text-center mt-1" style={{ color: '#7A4F2A' }}>
                 {table === 'takeout' ? '外帶' : `桌號 ${table}`}　·　手工現做
               </p>
             )}
@@ -327,9 +327,9 @@ function MenuContent() {
                   onClick={() => setActiveCategory(cat.category)}
                   className="shrink-0 rounded-full px-5 py-2.5 text-base font-semibold transition-all duration-150 active:scale-95"
                   style={{
-                    background: isOn ? C.primary : 'rgba(255,255,255,0.15)',
-                    color: isOn ? '#fff' : '#F5E6C8',
-                    border: isOn ? 'none' : '1px solid rgba(255,255,255,0.2)',
+                    background: isOn ? C.primary : 'rgba(0,0,0,0.08)',
+                    color: isOn ? '#fff' : '#5C3A1A',
+                    border: isOn ? 'none' : '1px solid rgba(0,0,0,0.12)',
                   }}>
                   {cat.category}
                 </button>
