@@ -5,38 +5,15 @@ import { useRouter } from 'next/navigation'
 
 const TABLES = [1, 2, 3, 4, 5]
 
-type Step = 'choose' | 'table' | 'ticket'
+type Step = 'choose' | 'table'
 
 export default function OrderLandingPage() {
   const router = useRouter()
-  const [step, setStep]           = useState<Step>('choose')
-  const [ticketNumber, setTicketNumber] = useState<number | null>(null)
-  const [loadingTicket, setLoadingTicket] = useState(false)
+  const [step, setStep] = useState<Step>('choose')
 
-  const goTakeout = async () => {
-    setLoadingTicket(true)
-    try {
-      const res = await fetch('/api/tickets')
-      const { number } = await res.json()
-      setTicketNumber(number)
-      setStep('ticket')
-    } catch {
-      // fallback: go directly without pre-assigned number
-      router.push('/menu?table=takeout')
-    } finally {
-      setLoadingTicket(false)
-    }
-  }
-
-  const goDineIn = () => setStep('table')
-
-  const goTable = (n: number) => router.push(`/menu?table=${n}`)
-
-  const startOrdering = () => {
-    if (ticketNumber != null) {
-      router.push(`/menu?table=takeout&ticket=${ticketNumber}`)
-    }
-  }
+  const goTakeout = () => router.push('/menu?table=takeout')
+  const goDineIn  = () => setStep('table')
+  const goTable   = (n: number) => router.push(`/menu?table=${n}`)
 
   return (
     <div
@@ -65,16 +42,15 @@ export default function OrderLandingPage() {
             <div className="flex flex-col gap-4">
               <button
                 onClick={goTakeout}
-                disabled={loadingTicket}
-                className="w-full rounded-2xl py-6 flex flex-col items-center gap-2 transition-all active:scale-[0.97] disabled:opacity-60"
+                className="w-full rounded-2xl py-6 flex flex-col items-center gap-2 transition-all active:scale-[0.97]"
                 style={{ background: '#5C3D2E', boxShadow: '0 4px 16px rgba(92,61,46,0.25)' }}
               >
-                <span className="text-4xl">{loadingTicket ? '⏳' : '🛍️'}</span>
+                <span className="text-4xl">🛍️</span>
                 <span className="text-xl font-bold tracking-[4px]" style={{ color: '#F5E6C8' }}>
                   外帶
                 </span>
                 <span className="text-xs" style={{ color: '#C9A97A' }}>
-                  {loadingTicket ? '取號中…' : '取號後開始點餐'}
+                  點餐完成後發放號碼牌
                 </span>
               </button>
 
@@ -99,50 +75,7 @@ export default function OrderLandingPage() {
           </>
         )}
 
-        {/* ── Step 2：號碼牌畫面 ── */}
-        {step === 'ticket' && ticketNumber != null && (
-          <div className="flex flex-col items-center">
-            <p className="text-sm tracking-[3px] mb-6" style={{ color: '#9C7A5A' }}>
-              您的外帶號碼牌
-            </p>
-
-            {/* 號碼牌卡片 */}
-            <div
-              className="w-full rounded-3xl flex flex-col items-center py-10 mb-8"
-              style={{
-                background: '#5C3D2E',
-                boxShadow: '0 8px 32px rgba(92,61,46,0.35)',
-              }}
-            >
-              <p className="text-sm font-semibold tracking-[4px] mb-3" style={{ color: 'rgba(245,230,200,0.7)' }}>
-                取餐號碼
-              </p>
-              <p
-                className="font-black leading-none"
-                style={{ color: '#F5C842', fontSize: 108, textShadow: '0 2px 12px rgba(245,200,66,0.4)' }}
-              >
-                {String(ticketNumber).padStart(3, '0')}
-              </p>
-              <p className="text-xs mt-4" style={{ color: 'rgba(245,230,200,0.5)' }}>
-                請記住此號碼，取餐時憑號領取
-              </p>
-            </div>
-
-            <p className="text-xs text-center mb-8" style={{ color: '#9C7A5A' }}>
-              訂完餐付款後，廚房出餐時會叫此號碼
-            </p>
-
-            <button
-              onClick={startOrdering}
-              className="w-full rounded-2xl py-5 text-lg font-bold tracking-[4px] transition-all active:scale-[0.98]"
-              style={{ background: '#D97706', color: '#fff', boxShadow: '0 4px 16px rgba(217,119,6,0.35)' }}
-            >
-              開始點餐 →
-            </button>
-          </div>
-        )}
-
-        {/* ── Step 3：選擇桌號 ── */}
+        {/* ── Step 2：選擇桌號 ── */}
         {step === 'table' && (
           <>
             <div className="flex items-center gap-3 mb-6">

@@ -135,11 +135,12 @@ function CartRow({ item, idx, onMinus, onPlus }: {
 }
 
 // ── 主元件 ───────────────────────────────────────────────
+type ReceiptItem = { name: string; qty: number; unitPrice: number; options: { label: string }[] }
+type ReceiptData = { items: ReceiptItem[]; total: number; note: string; pickupNumber: number | null }
+
 function MenuContent() {
   const searchParams = useSearchParams()
-  const table        = searchParams.get('table') || 'A1'
-  const ticketParam  = searchParams.get('ticket')
-  const ticketNumber = ticketParam ? Number(ticketParam) : null
+  const table = searchParams.get('table') || 'A1'
 
   const [menuData, setMenuData]       = useState<MenuCategory[]>([])
   const [menuLoading, setMenuLoading] = useState(true)
@@ -147,17 +148,10 @@ function MenuContent() {
   const [showOptions, setShowOptions] = useState<MenuItem | null>(null)
   const [activeCategory, setActiveCategory] = useState('')
 
-  // Mobile cart sheet
-  const [showCart, setShowCart]     = useState(false)
-  const [orderNote, setOrderNote]   = useState('')
-
-  // Submit state
-  const [submitting, setSubmitting]               = useState(false)
-  const [submitted, setSubmitted]                 = useState(false)
-  const [pickupNumber, setPickupNumber]           = useState<number | null>(null)
-  const [redirectingToPay, setRedirectingToPay]   = useState(false)
-  const [snapshot, setSnapshot]                   = useState<{ name: string; qty: number; price: number }[]>([])
-  const [snapshotTotal, setSnapshotTotal]         = useState(0)
+  const [showCart, setShowCart]   = useState(false)
+  const [orderNote, setOrderNote] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [receipt, setReceipt]     = useState<ReceiptData | null>(null)
 
   const { items, addItem, removeItem, updateQty, clearCart, total } = useCart()
 
@@ -207,33 +201,23 @@ function MenuContent() {
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table_id: table, items: formattedItems, total,
-          note: orderNote || null,
-          pickup_number: ticketNumber ?? undefined,
-        }),
+        body: JSON.stringify({ table_id: table, items: formattedItems, total, note: orderNote || null }),
       })
       if (!res.ok) return
       const data = await res.json()
 
+      const receiptItems: ReceiptItem[] = items.map(i => ({
+        name: i.name,
+        qty: i.qty,
+        unitPrice: i.price + i.options.reduce((s, o) => s + o.price_delta, 0),
+        options: i.options.map(o => ({ label: o.label })),
+      }))
+      clearCart()
+      setOrderNote('')
       setShowCart(false)
-      setRedirectingToPay(true)
-      const productName = formattedItems.map(i => `${i.name}×${i.qty}`).join(', ')
-      const payRes = await fetch('/api/linepay/request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: data.id, amount: total, productName }),
-      })
-      const payData = await payRes.json()
-      if (payData.paymentUrl) {
-        clearCart()
-        window.location.href = payData.paymentUrl
-      } else {
-        setRedirectingToPay(false)
-      }
+      setReceipt({ items: receiptItems, total, note: orderNote, pickupNumber: data.pickup_number ?? null })
     } catch (e) {
       console.error(e)
-      setRedirectingToPay(false)
     } finally {
       setSubmitting(false)
     }
@@ -284,7 +268,7 @@ function MenuContent() {
           background: totalQty > 0 ? C.primary : C.muted, color: '#fff',
           boxShadow: totalQty > 0 ? '0 8px 20px rgba(217,119,6,0.3)' : 'none',
         }}>
-        {submitting ? '送出中…' : '確認送出並付款'}
+        {submitting ? '送出中…' : '確認送出訂單'}
       </button>
     </div>
   )
@@ -301,20 +285,9 @@ function MenuContent() {
             <h1 className="text-xl font-bold text-center tracking-widest" style={{ color: '#3D2B1F' }}>
               忠國豆漿
             </h1>
-            {table === 'takeout' && ticketNumber != null ? (
-              <div className="flex items-center justify-center gap-2 mt-1">
-                <span className="text-sm" style={{ color: '#7A4F2A' }}>外帶</span>
-                <span className="text-xl font-black px-3 py-0.5 rounded-xl"
-                  style={{ background: '#F5C842', color: '#3D2B1F' }}>
-                  #{String(ticketNumber).padStart(3, '0')}
-                </span>
-                <span className="text-sm" style={{ color: '#7A4F2A' }}>號</span>
-              </div>
-            ) : (
-              <p className="text-sm text-center mt-1" style={{ color: '#7A4F2A' }}>
-                {table === 'takeout' ? '外帶' : `桌號 ${table}`}　·　手工現做
-              </p>
-            )}
+            <p className="text-sm text-center mt-1" style={{ color: '#7A4F2A' }}>
+              {table === 'takeout' ? '外帶' : `桌號 ${table}`}　·　手工現做
+            </p>
           </div>
 
           {/* 分類 Pills */}
@@ -436,75 +409,100 @@ function MenuContent() {
         />
       )}
 
-      {/* ── LINE Pay spinner ───────────────────────────── */}
-      {redirectingToPay && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center"
-          style={{ background: 'rgba(0,0,0,0.75)' }}>
-          <div className="w-16 h-16 rounded-full border-4 border-white border-t-transparent animate-spin mb-6" />
-          <p className="text-base font-semibold text-white">導向 LINE Pay…</p>
-        </div>
-      )}
+      {/* ── 結算 / 號碼牌畫面 ───────────────────────────── */}
+      {receipt && (
+        <div className="fixed inset-0 z-50 flex flex-col overlay-enter"
+          style={{ background: '#F7F2EB', fontFamily: "'Noto Serif TC', serif" }}>
 
-      {/* ── 內用成功（3.5 秒）────────────────────────────── */}
-      {submitted && table !== 'takeout' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overlay-enter"
-          style={{ background: 'rgba(0,0,0,0.55)' }}>
-          <div className="rounded-3xl p-10 text-center mx-6 pop-in" style={{ background: '#fff', minWidth: 240 }}>
-            <div className="text-6xl mb-4">✅</div>
-            <h2 className="text-xl font-bold mb-1" style={{ color: C.text }}>訂單已送出！</h2>
-            <p className="text-sm mt-2" style={{ color: C.sub }}>{table} 桌，廚房收到了</p>
-            <p className="text-sm mt-1" style={{ color: C.muted }}>請稍候 🍳</p>
-          </div>
-        </div>
-      )}
+          {/* 頂部色條 */}
+          <div className="h-1.5 w-full shrink-0" style={{ background: C.primary }} />
 
-      {/* ── 外帶號碼單（全屏）──────────────────────────────── */}
-      {submitted && table === 'takeout' && (
-        <div className="fixed inset-0 z-50 flex flex-col overlay-enter" style={{ background: C.header }}>
-          <div className="h-2 w-full" style={{ background: C.primary }} />
           <div className="flex-1 overflow-y-auto flex flex-col items-center px-6 py-8">
-            <p className="text-sm tracking-[4px] mb-1" style={{ color: '#C9A97A' }}>忠國豆漿</p>
-            <p className="text-xs tracking-[2px] mb-8" style={{ color: '#7A5240' }}>外帶取餐號碼單</p>
-            <div className="w-full max-w-xs rounded-3xl flex flex-col items-center py-8 mb-8 pop-in"
-              style={{ background: C.primary, boxShadow: '0 8px 32px rgba(217,119,6,0.4)' }}>
-              <p className="text-sm font-semibold tracking-[3px] mb-2" style={{ color: 'rgba(255,255,255,0.75)' }}>取餐號碼</p>
-              <p className="font-black leading-none" style={{ color: '#fff', fontSize: 96 }}>
-                {pickupNumber !== null ? String(pickupNumber).padStart(3, '0') : '---'}
-              </p>
-              <p className="text-xs mt-3" style={{ color: 'rgba(255,255,255,0.6)' }}>聽到叫號請至櫃台取餐</p>
-            </div>
-            <div className="w-full max-w-xs rounded-2xl overflow-hidden mb-6"
-              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
-              <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
-                <p className="text-xs font-bold tracking-[3px]" style={{ color: '#C9A97A' }}>訂單明細</p>
+
+            {/* 標題 */}
+            <p className="text-base font-bold tracking-[4px] mb-1" style={{ color: '#3D2B1F' }}>忠國豆漿</p>
+            <p className="text-xs tracking-[2px] mb-6" style={{ color: '#9C7A5A' }}>訂單已送出 ✓</p>
+
+            {/* 外帶號碼牌 */}
+            {receipt.pickupNumber != null && (
+              <div className="w-full max-w-xs rounded-3xl flex flex-col items-center py-8 mb-6 pop-in"
+                style={{ background: '#5C3D2E', boxShadow: '0 8px 32px rgba(92,61,46,0.35)' }}>
+                <p className="text-xs font-semibold tracking-[4px] mb-3"
+                  style={{ color: 'rgba(245,230,200,0.7)' }}>取餐號碼</p>
+                <p className="font-black leading-none"
+                  style={{ color: '#F5C842', fontSize: 100, textShadow: '0 2px 12px rgba(245,200,66,0.4)' }}>
+                  {String(receipt.pickupNumber).padStart(3, '0')}
+                </p>
+                <p className="text-xs mt-4" style={{ color: 'rgba(245,230,200,0.55)' }}>
+                  聽到叫號請至櫃台取餐
+                </p>
               </div>
-              <div className="px-4 py-2">
-                {snapshot.map((item, i) => (
-                  <div key={i} className="flex justify-between items-center py-2.5 border-b last:border-b-0"
-                    style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-                    <span className="text-sm" style={{ color: '#F5E6C8' }}>{item.name}</span>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-sm font-semibold px-2 py-0.5 rounded-full"
-                        style={{ background: 'rgba(255,255,255,0.1)', color: '#C9A97A' }}>×{item.qty}</span>
-                      <span className="text-sm font-bold" style={{ color: '#F5E6C8' }}>${item.price * item.qty}</span>
+            )}
+
+            {/* 桌號提示（內用） */}
+            {receipt.pickupNumber == null && (
+              <div className="w-full max-w-xs rounded-2xl flex items-center justify-center py-5 mb-6"
+                style={{ background: C.primary, boxShadow: '0 4px 16px rgba(217,119,6,0.3)' }}>
+                <span className="text-xl font-bold tracking-[3px]" style={{ color: '#fff' }}>
+                  {table} 桌　·　廚房收到囉 🍳
+                </span>
+              </div>
+            )}
+
+            {/* 訂單明細卡片 */}
+            <div className="w-full max-w-xs rounded-2xl overflow-hidden mb-4"
+              style={{ background: '#fff', border: '1px solid #E5DDD0', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+
+              <div className="px-5 py-3 border-b" style={{ borderColor: '#EDE5D8' }}>
+                <p className="text-xs font-bold tracking-[3px]" style={{ color: '#9C7A5A' }}>訂單明細</p>
+              </div>
+
+              <div className="px-5 py-2">
+                {receipt.items.map((item, i) => (
+                  <div key={i} className="py-3 border-b last:border-b-0" style={{ borderColor: '#F0E8DC' }}>
+                    <div className="flex justify-between items-start">
+                      <span className="text-sm font-semibold" style={{ color: '#3D2B1F' }}>{item.name}</span>
+                      <div className="flex items-center gap-2 shrink-0 ml-4">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                          style={{ background: '#F5EFE6', color: '#7A5240' }}>×{item.qty}</span>
+                        <span className="text-sm font-bold" style={{ color: C.primary }}>
+                          ${item.unitPrice * item.qty}
+                        </span>
+                      </div>
                     </div>
+                    {item.options.length > 0 && (
+                      <p className="text-xs mt-0.5" style={{ color: '#9C7A5A' }}>
+                        {item.options.map(o => o.label).join('・')}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between items-center px-4 py-3 border-t"
-                style={{ borderColor: 'rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)' }}>
-                <span className="text-sm" style={{ color: '#C9A97A' }}>合計</span>
-                <span className="text-base font-bold" style={{ color: '#F5E6C8' }}>${snapshotTotal}</span>
+
+              {receipt.note && (
+                <div className="mx-5 mb-3 px-3 py-2 rounded-lg text-xs italic"
+                  style={{ background: '#FFFBEB', color: '#92400E', border: '1px dashed #FCD34D' }}>
+                  📝 {receipt.note}
+                </div>
+              )}
+
+              <div className="flex justify-between items-center px-5 py-3 border-t"
+                style={{ borderColor: '#EDE5D8', background: '#FAF5EE' }}>
+                <span className="text-sm font-semibold" style={{ color: '#7A5240' }}>合計</span>
+                <span className="text-lg font-black" style={{ color: '#3D2B1F' }}>${receipt.total}</span>
               </div>
             </div>
+
           </div>
-          <div className="px-6"
+
+          {/* 底部按鈕 */}
+          <div className="px-6 shrink-0"
             style={{ paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', paddingTop: 12,
-              background: 'rgba(0,0,0,0.3)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              borderTop: '1px solid #E5DDD0', background: '#F7F2EB' }}>
             <button
-              onClick={() => { setSubmitted(false); setOrderNote(''); setPickupNumber(null); setSnapshot([]); setSnapshotTotal(0) }}
+              onClick={() => setReceipt(null)}
               className="w-full rounded-2xl py-4 text-base font-bold tracking-[3px] transition-all active:scale-[0.98]"
-              style={{ background: C.primary, color: '#fff' }}>
+              style={{ background: C.primary, color: '#fff', boxShadow: '0 4px 16px rgba(217,119,6,0.3)' }}>
               完成，繼續點餐
             </button>
           </div>
