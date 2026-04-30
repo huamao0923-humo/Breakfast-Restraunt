@@ -31,10 +31,10 @@ export function OptionSheet({ item, showToppings, onAdd, onClose }: OptionSheetP
   const regularOptions = item.options.filter(o => !o.label.includes('杯'))
   const hasSizeOpts    = sizeOptions.length > 0
 
-  // 規格：單選，預設大杯
-  const [selectedSizeId, setSelectedSizeId]     = useState<string>(LARGE_ID)
-  // 溫度：單選，預設冰的（只有飲料才顯示）
-  const [selectedTempId, setSelectedTempId]     = useState<string>(TEMPERATURES[0].id)
+  // 規格：單選，必選（無預設）
+  const [selectedSizeId, setSelectedSizeId]     = useState<string | null>(null)
+  // 溫度：單選，必選（無預設）
+  const [selectedTempId, setSelectedTempId]     = useState<string | null>(null)
   // 一般客製：多選
   const [selected, setSelected]                 = useState<string[]>([])
   // 加配料：多選
@@ -48,13 +48,17 @@ export function OptionSheet({ item, showToppings, onAdd, onClose }: OptionSheetP
   const toggleTopping = (id: string) =>
     setSelectedToppings(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
 
+  // 飲料兩題都必選才能送出
+  const canAdd = hasSizeOpts ? (selectedSizeId !== null && selectedTempId !== null) : true
+
   const handleAdd = () => {
+    if (!canAdd) return
     const sizeOpt: CartItemOption[] =
       hasSizeOpts && selectedSizeId !== LARGE_ID
         ? sizeOptions.filter(o => o.id === selectedSizeId)
         : []
 
-    const tempOpt: CartItemOption[] = hasSizeOpts
+    const tempOpt: CartItemOption[] = hasSizeOpts && selectedTempId
       ? TEMPERATURES.filter(t => t.id === selectedTempId)
       : []
 
@@ -66,7 +70,7 @@ export function OptionSheet({ item, showToppings, onAdd, onClose }: OptionSheetP
 
   // 計算規格加入購物車後的實際單價（供按鈕顯示用）
   const currentPrice = (() => {
-    if (!hasSizeOpts) return null
+    if (!hasSizeOpts || selectedSizeId === null) return null
     if (selectedSizeId === LARGE_ID) return item.price
     const opt = sizeOptions.find(o => o.id === selectedSizeId)
     return opt ? item.price + opt.price_delta : item.price
@@ -298,11 +302,14 @@ export function OptionSheet({ item, showToppings, onAdd, onClose }: OptionSheetP
           </button>
           <button
             onClick={handleAdd}
-            className="py-4 rounded-2xl text-base font-bold transition-all active:scale-[0.98]"
-            style={{ flex: 2, background: C.primary, color: '#fff' }}>
-            {hasSizeOpts && currentPrice !== null
-              ? `加入購物車 $${currentPrice}`
-              : '加入購物車'}
+            disabled={!canAdd}
+            className="py-4 rounded-2xl text-base font-bold transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ flex: 2, background: canAdd ? C.primary : C.sub, color: '#fff' }}>
+            {!canAdd
+              ? (selectedSizeId === null ? '請先選擇規格' : '請先選擇溫度')
+              : hasSizeOpts && currentPrice !== null
+                ? `加入購物車 $${currentPrice}`
+                : '加入購物車'}
           </button>
         </div>
       </div>
