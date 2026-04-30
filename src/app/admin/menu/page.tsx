@@ -12,11 +12,12 @@ interface FormState {
   newCategory: string
   name: string
   price: string
+  hasTemperature: boolean
   options: { id?: string; label: string; price_delta: string }[]
 }
 
 const EMPTY_FORM: FormState = {
-  id: '', category: '', newCategory: '', name: '', price: '', options: [],
+  id: '', category: '', newCategory: '', name: '', price: '', hasTemperature: false, options: [],
 }
 
 // ─── 自動產生 ID ──────────────────────────────────────────
@@ -166,25 +167,23 @@ export default function AdminMenuPage() {
   // ── Modal helpers ─────────────────────────────────────────
   const openAddModal = (defaultCategory?: string) => {
     const cat = defaultCategory ?? (categories[0]?.category ?? '')
-    setForm({ ...EMPTY_FORM, category: cat, id: cat ? generateId(cat, allItems) : '' })
+    setForm({ ...EMPTY_FORM, category: cat, id: cat ? generateId(cat, allItems) : '', hasTemperature: false })
     setEditingId(null)
     setShowNewCategoryInput(false)
     setShowModal(true)
   }
 
   const openEditModal = (item: MenuItem, category: string) => {
-    const hasSizeOpts = item.options.some(o => o.label.includes('杯'))
     const hasTempOpts = item.options.some(o => o.id.startsWith('temp_'))
-    // 飲料品項若 DB 尚未存溫度選項，自動預填
-    const baseOptions = item.options.map((o) => ({ id: o.id, label: o.label, price_delta: String(o.price_delta) }))
-    const tempDefaults = TEMPERATURES.map(t => ({ id: t.id, label: t.label, price_delta: String(t.price_delta) }))
-    const mergedOptions = hasSizeOpts && !hasTempOpts
-      ? [...baseOptions, ...tempDefaults]
-      : baseOptions
+    // 非溫度的選項才列入可編輯選項
+    const nonTempOptions = item.options
+      .filter(o => !o.id.startsWith('temp_'))
+      .map(o => ({ id: o.id, label: o.label, price_delta: String(o.price_delta) }))
     setForm({
       id: item.id, category, newCategory: '', name: item.name,
       price: String(item.price),
-      options: mergedOptions,
+      hasTemperature: hasTempOpts,
+      options: nonTempOptions,
     })
     setEditingId(item.id)
     setShowNewCategoryInput(false)
@@ -224,9 +223,12 @@ export default function AdminMenuPage() {
     const payload = {
       id: newIdTrimmed, category: finalCategory, name: form.name.trim(),
       price: Number(form.price),
-      options: form.options.filter((o) => o.label.trim()).map((o, i) => ({
-        id: o.id ?? `OPT_${newIdTrimmed}_${i}`, label: o.label.trim(), price_delta: Number(o.price_delta) || 0,
-      })) as MenuOption[],
+      options: [
+        ...form.options.filter((o) => o.label.trim()).map((o, i) => ({
+          id: o.id ?? `OPT_${newIdTrimmed}_${i}`, label: o.label.trim(), price_delta: Number(o.price_delta) || 0,
+        })),
+        ...(form.hasTemperature ? TEMPERATURES : []),
+      ] as MenuOption[],
       sort_order: allItems.filter((i) => i.category === finalCategory).length + 1,
     }
 
@@ -398,12 +400,18 @@ export default function AdminMenuPage() {
 
                     {/* 名稱 + 選項 */}
                     <div className="flex-1 min-w-0 select-none">
-                      <div className="text-sm font-medium leading-snug" style={{ color: '#3D2B1F' }}>
-                        {item.name}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-medium leading-snug" style={{ color: '#3D2B1F' }}>
+                          {item.name}
+                        </span>
+                        {item.options.some(o => o.id.startsWith('temp_')) && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+                            style={{ background: '#E0F2FE', color: '#0369A1' }}>🌡 溫度</span>
+                        )}
                       </div>
-                      {item.options.length > 0 && (
+                      {item.options.filter(o => !o.id.startsWith('temp_')).length > 0 && (
                         <div className="text-[10px] mt-0.5" style={{ color: '#9C7A5A' }}>
-                          {item.options.map((o) => o.label + (o.price_delta > 0 ? ` +${o.price_delta}` : '')).join('・')}
+                          {item.options.filter(o => !o.id.startsWith('temp_')).map((o) => o.label + (o.price_delta > 0 ? ` +${o.price_delta}` : '')).join('・')}
                         </div>
                       )}
                     </div>
@@ -544,6 +552,26 @@ export default function AdminMenuPage() {
                   className="w-full border rounded-lg px-3 py-2 text-sm outline-none"
                   style={{ borderColor: '#D4B896', color: '#3D2B1F', fontSize: 16 }}
                 />
+              </div>
+
+              {/* 溫度選擇開關 */}
+              <div className="flex items-center justify-between px-4 py-3 rounded-xl"
+                style={{ background: '#F5EFE6', border: '1px solid #E0D4C0' }}>
+                <div>
+                  <p className="text-sm font-medium" style={{ color: '#5C3D2E' }}>開放溫度選擇</p>
+                  <p className="text-xs mt-0.5" style={{ color: '#9C7A5A' }}>冰的・溫的・熱的（適用飲料品項）</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, hasTemperature: !f.hasTemperature }))}
+                  className="relative w-12 h-6 rounded-full transition-all duration-200 shrink-0"
+                  style={{ background: form.hasTemperature ? '#C67C3A' : '#D4B896' }}
+                >
+                  <span
+                    className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200"
+                    style={{ left: form.hasTemperature ? '1.375rem' : '0.125rem' }}
+                  />
+                </button>
               </div>
 
               {/* 選項 */}
