@@ -45,8 +45,14 @@ function KitchenContent() {
     return () => es.close()
   }, [])
 
-  const markDone = (id: string) =>
+  const markDone = async (id: string) => {
     setDone((prev) => new Set([...prev, id]))
+    await fetch(`/api/orders/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'completed' }),
+    })
+  }
 
   const cancelOrder = async (id: string) => {
     setCancelling(true)
