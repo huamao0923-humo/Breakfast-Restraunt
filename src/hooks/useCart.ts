@@ -6,7 +6,7 @@ import type { CartItem, CartItemOption } from '@/types'
 export function useCart() {
   const [items, setItems] = useState<CartItem[]>([])
 
-  const addItem = useCallback((id: string, name: string, price: number, options: CartItemOption[]) => {
+  const addItem = useCallback((id: string, name: string, price: number, options: CartItemOption[], qty: number = 1) => {
     setItems((prev) => {
       const existing = prev.find(
         (item) =>
@@ -16,7 +16,7 @@ export function useCart() {
 
       if (existing) {
         return prev.map((item) =>
-          item === existing ? { ...item, qty: item.qty + 1 } : item
+          item === existing ? { ...item, qty: item.qty + qty } : item
         )
       }
 
@@ -26,7 +26,7 @@ export function useCart() {
           id,
           name,
           price,
-          qty: 1,
+          qty,
           options,
         },
       ]

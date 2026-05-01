@@ -5,7 +5,7 @@ import type { MenuItem, CartItemOption } from '@/types'
 
 interface OptionSheetProps {
   item: MenuItem
-  onAdd: (options: CartItemOption[]) => void
+  onAdd: (options: CartItemOption[], qty: number) => void
   onClose: () => void
 }
 
@@ -36,6 +36,8 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
   const [selectedTempId, setSelectedTempId] = useState<string | null>(null)
   // 一般客製：多選
   const [selected, setSelected] = useState<string[]>([])
+  // 數量
+  const [qty, setQty] = useState(1)
 
   if (item.options.length === 0) return null
 
@@ -59,7 +61,7 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
       : []
 
     const regularOpts = regularOptions.filter(o => selected.includes(o.id))
-    onAdd([...sizeOpt, ...tempOpt, ...regularOpts])
+    onAdd([...sizeOpt, ...tempOpt, ...regularOpts], qty)
     onClose()
   }
 
@@ -262,8 +264,25 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
           )}
         </div>
 
+        {/* 數量選擇 */}
+        <div className="px-6 pt-3 pb-1 flex items-center justify-center gap-5 border-t shrink-0" style={{ borderColor: C.border }}>
+          <button
+            onClick={() => setQty(q => Math.max(1, q - 1))}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold transition-all active:scale-90"
+            style={{ background: qty <= 1 ? C.border : C.pill, color: qty <= 1 ? C.sub : C.text }}>
+            －
+          </button>
+          <span className="text-lg font-bold w-6 text-center" style={{ color: C.text }}>{qty}</span>
+          <button
+            onClick={() => setQty(q => q + 1)}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold transition-all active:scale-90"
+            style={{ background: C.pill, color: C.text }}>
+            ＋
+          </button>
+        </div>
+
         {/* 底部按鈕 */}
-        <div className="px-6 pt-3 pb-5 flex gap-3 border-t shrink-0" style={{ borderColor: C.border }}>
+        <div className="px-6 pt-3 pb-5 flex gap-3 shrink-0">
           <button
             onClick={onClose}
             className="flex-1 py-4 rounded-2xl text-base font-bold transition-all active:scale-95"
@@ -278,8 +297,10 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
             {!canAdd
               ? (selectedSizeId === null ? '請先選擇規格' : hasTempOpts ? '請先選擇溫度' : '請先選擇規格')
               : hasSizeOpts && currentPrice !== null
-                ? `加入購物車 $${currentPrice}`
-                : '加入購物車'}
+                ? `加入購物車 $${currentPrice * qty}`
+                : qty > 1
+                  ? `加入購物車 ×${qty}`
+                  : '加入購物車'}
           </button>
         </div>
       </div>

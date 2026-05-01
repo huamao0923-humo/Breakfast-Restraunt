@@ -184,13 +184,14 @@ function MenuContent() {
     return () => es.close()
   }, [])
 
-  const handleAddItem = (options: CartItemOption[]) => {
+  const handleAddItem = (options: CartItemOption[], qty: number = 1) => {
     if (!showOptions) return
     if (editingCartIdx !== null) {
       replaceOptions(editingCartIdx, options)
+      updateQty(editingCartIdx, qty)
       setEditingCartIdx(null)
     } else {
-      addItem(showOptions.id, showOptions.name, showOptions.price, options)
+      addItem(showOptions.id, showOptions.name, showOptions.price, options, qty)
     }
     setShowOptions(null)
   }
