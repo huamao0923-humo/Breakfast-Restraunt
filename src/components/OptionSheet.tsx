@@ -34,15 +34,15 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
   const [selectedSizeId, setSelectedSizeId] = useState<string | null>(null)
   // 溫度：單選，必選（無預設）
   const [selectedTempId, setSelectedTempId] = useState<string | null>(null)
-  // 一般客製：多選
-  const [selected, setSelected] = useState<string[]>([])
+  // 一般客製：多選（以 index 追蹤，避免 DB 中重複 id 互相干擾）
+  const [selected, setSelected] = useState<number[]>([])
   // 數量
   const [qty, setQty] = useState(1)
 
   if (item.options.length === 0) return null
 
-  const toggleRegular = (id: string) =>
-    setSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  const toggleRegular = (idx: number) =>
+    setSelected(prev => prev.includes(idx) ? prev.filter(x => x !== idx) : [...prev, idx])
 
   // 飲料兩題都必選才能送出
   const canAdd = hasSizeOpts
@@ -60,7 +60,7 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
       ? tempOptions.filter(t => t.id === selectedTempId)
       : []
 
-    const regularOpts = regularOptions.filter(o => selected.includes(o.id))
+    const regularOpts = regularOptions.filter((_, idx) => selected.includes(idx))
     onAdd([...sizeOpt, ...tempOpt, ...regularOpts], qty)
     onClose()
   }
@@ -249,14 +249,14 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
                 客製選項
               </p>
               <div className="space-y-2">
-                {regularOptions.map(opt => (
+                {regularOptions.map((opt, idx) => (
                   <CheckRow
-                    key={opt.id}
+                    key={idx}
                     id={opt.id}
                     label={opt.label}
                     priceDelta={opt.price_delta}
-                    checked={selected.includes(opt.id)}
-                    onToggle={() => toggleRegular(opt.id)}
+                    checked={selected.includes(idx)}
+                    onToggle={() => toggleRegular(idx)}
                   />
                 ))}
               </div>
