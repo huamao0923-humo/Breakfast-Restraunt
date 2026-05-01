@@ -202,7 +202,7 @@ export default function AdminMenuPage() {
     }
   }
 
-  const addOption    = () => setForm((f) => ({ ...f, options: [...f.options, { label: '', price_delta: '0' }] }))
+  const addOption    = () => setForm((f) => ({ ...f, options: [...f.options, { id: `OPT_new_${Date.now()}`, label: '', price_delta: '0' }] }))
   const removeOption = (i: number) => setForm((f) => ({ ...f, options: f.options.filter((_, idx) => idx !== i) }))
   const updateOption = (i: number, field: 'label' | 'price_delta', val: string) =>
     setForm((f) => { const opts = [...f.options]; opts[i] = { ...opts[i], [field]: val }; return { ...f, options: opts } })
@@ -247,7 +247,7 @@ export default function AdminMenuPage() {
       price: Number(form.price),
       options: [
         ...form.options.filter((o) => o.label.trim()).map((o, i) => ({
-          id: o.id ?? `OPT_${newIdTrimmed}_${i}`, label: o.label.trim(), price_delta: Number(o.price_delta) || 0,
+          id: o.id ?? `OPT_${newIdTrimmed}_${Date.now()}_${i}`, label: o.label.trim(), price_delta: Number(o.price_delta) || 0,
         })),
         ...(form.hasTemperature ? TEMPERATURES : []),
       ] as MenuOption[],
