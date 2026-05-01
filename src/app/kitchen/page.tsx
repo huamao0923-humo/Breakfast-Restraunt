@@ -21,10 +21,14 @@ function KitchenContent() {
   const [cancelling, setCancelling] = useState(false)
 
   useEffect(() => {
-    fetch('/api/orders?mode=kitchen')
-      .then((res) => res.ok ? res.json() : Promise.reject(res))
-      .then((data: Order[]) => { setOrders(Array.isArray(data) ? data : []); setLoading(false) })
-      .catch(() => setLoading(false))
+    const fetchOrders = () =>
+      fetch('/api/orders?mode=kitchen')
+        .then((res) => res.ok ? res.json() : Promise.reject(res))
+        .then((data: Order[]) => { setOrders(Array.isArray(data) ? data : []); setLoading(false) })
+        .catch(() => setLoading(false))
+
+    fetchOrders()
+    const poll = setInterval(fetchOrders, 5000)
 
     const es = new EventSource('/api/events?channel=kitchen')
 
@@ -42,7 +46,7 @@ function KitchenContent() {
       setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
     })
 
-    return () => es.close()
+    return () => { es.close(); clearInterval(poll) }
   }, [])
 
   const markDone = async (id: string) => {
