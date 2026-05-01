@@ -30,7 +30,7 @@ export async function PUT(
           category = ${category},
           name     = ${name},
           price    = ${Number(price)},
-          options  = ${options ?? []},
+          options  = ${sql.json(options ?? [])},
           sort_order = ${sort_order ?? 0}
       WHERE id = ${id}
       RETURNING *

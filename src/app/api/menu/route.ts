@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     const [row] = await sql`
       INSERT INTO menu_items (id, category, name, price, options, sort_order)
-      VALUES (${id}, ${category}, ${name}, ${Number(price)}, ${options ?? []}, ${nextSortOrder})
+      VALUES (${id}, ${category}, ${name}, ${Number(price)}, ${sql.json(options ?? [])}, ${nextSortOrder})
       RETURNING *
     `
 
