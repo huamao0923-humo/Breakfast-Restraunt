@@ -14,7 +14,7 @@ interface FormState {
   price: string
   hasTemperature: boolean
   sort_order?: number
-  options: { id?: string; label: string; price_delta: string }[]
+  options: { id?: string; label: string; price_delta: string; isRequired?: boolean }[]
 }
 
 const EMPTY_FORM: FormState = {
@@ -179,7 +179,12 @@ export default function AdminMenuPage() {
     // 非溫度的選項才列入可編輯選項
     const nonTempOptions = item.options
       .filter(o => !o.id.startsWith('temp_'))
-      .map(o => ({ id: o.id, label: o.label, price_delta: String(o.price_delta) }))
+      .map(o => ({
+        id: o.id.startsWith('req_') ? o.id.slice(4) : o.id,
+        label: o.label,
+        price_delta: String(o.price_delta),
+        isRequired: o.id.startsWith('req_'),
+      }))
     setForm({
       id: item.id, category, newCategory: '', name: item.name,
       price: String(item.price),
@@ -202,10 +207,12 @@ export default function AdminMenuPage() {
     }
   }
 
-  const addOption    = () => setForm((f) => ({ ...f, options: [...f.options, { id: `OPT_new_${Date.now()}`, label: '', price_delta: '0' }] }))
-  const removeOption = (i: number) => setForm((f) => ({ ...f, options: f.options.filter((_, idx) => idx !== i) }))
-  const updateOption = (i: number, field: 'label' | 'price_delta', val: string) =>
+  const addOption      = () => setForm((f) => ({ ...f, options: [...f.options, { id: `OPT_new_${Date.now()}`, label: '', price_delta: '0' }] }))
+  const removeOption   = (i: number) => setForm((f) => ({ ...f, options: f.options.filter((_, idx) => idx !== i) }))
+  const updateOption   = (i: number, field: 'label' | 'price_delta', val: string) =>
     setForm((f) => { const opts = [...f.options]; opts[i] = { ...opts[i], [field]: val }; return { ...f, options: opts } })
+  const toggleRequired = (i: number) =>
+    setForm((f) => { const opts = [...f.options]; opts[i] = { ...opts[i], isRequired: !opts[i].isRequired }; return { ...f, options: opts } })
 
   // 選項拖移排序
   const optDragging = useRef<number | null>(null)
@@ -246,9 +253,10 @@ export default function AdminMenuPage() {
       id: newIdTrimmed, category: finalCategory, name: form.name.trim(),
       price: Number(form.price),
       options: [
-        ...form.options.filter((o) => o.label.trim()).map((o, i) => ({
-          id: o.id ?? `OPT_${newIdTrimmed}_${Date.now()}_${i}`, label: o.label.trim(), price_delta: Number(o.price_delta) || 0,
-        })),
+        ...form.options.filter((o) => o.label.trim()).map((o, i) => {
+          const baseId = o.id ?? `OPT_${newIdTrimmed}_${Date.now()}_${i}`
+          return { id: o.isRequired ? `req_${baseId}` : baseId, label: o.label.trim(), price_delta: Number(o.price_delta) || 0 }
+        }),
         ...(form.hasTemperature ? TEMPERATURES : []),
       ] as MenuOption[],
       // 編輯時保留原始 sort_order；新增時由 server 端 MAX+1 決定
@@ -636,11 +644,24 @@ export default function AdminMenuPage() {
                           style={{ color: '#D4B896' }}
                           title="拖移排序"
                         >⠿</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleRequired(i)}
+                          title={opt.isRequired ? '必選單選（點擊改為一般選項）' : '一般選項（點擊設為必選）'}
+                          className="shrink-0 text-xs px-2 py-1.5 rounded-md font-bold transition"
+                          style={{
+                            background: opt.isRequired ? '#D97706' : '#F0EBE3',
+                            color: opt.isRequired ? '#fff' : '#9C7A5A',
+                            minWidth: 44,
+                          }}
+                        >
+                          必選
+                        </button>
                         <input type="text" value={opt.label}
                           onChange={(e) => updateOption(i, 'label', e.target.value)}
                           placeholder="選項名稱（如：加蛋）"
                           className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none"
-                          style={{ borderColor: '#D4B896', color: '#3D2B1F', fontSize: 16 }}
+                          style={{ borderColor: opt.isRequired ? '#D97706' : '#D4B896', color: '#3D2B1F', fontSize: 16 }}
                         />
                         <div className="relative w-24 shrink-0">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: '#C9A97A' }}>+</span>

@@ -23,17 +23,21 @@ const C = {
 const LARGE_ID = '__large__'
 
 export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
-  // 拆分規格選項（含「杯」字）、溫度選項（id 以 temp_ 開頭）與一般客製選項
+  // 拆分規格選項（含「杯」字）、溫度選項（id 以 temp_ 開頭）、必選群組（id 以 req_ 開頭）與一般客製選項
   const sizeOptions    = item.options.filter(o => o.label.includes('杯'))
   const tempOptions    = item.options.filter(o => o.id.startsWith('temp_'))
-  const regularOptions = item.options.filter(o => !o.label.includes('杯') && !o.id.startsWith('temp_'))
+  const reqOptions     = item.options.filter(o => o.id.startsWith('req_'))
+  const regularOptions = item.options.filter(o => !o.label.includes('杯') && !o.id.startsWith('temp_') && !o.id.startsWith('req_'))
   const hasSizeOpts    = sizeOptions.length > 0
   const hasTempOpts    = tempOptions.length > 0
+  const hasReqOpts     = reqOptions.length > 0
 
   // 規格：單選，必選（無預設）
   const [selectedSizeId, setSelectedSizeId] = useState<string | null>(null)
   // 溫度：單選，必選（無預設）
   const [selectedTempId, setSelectedTempId] = useState<string | null>(null)
+  // 必選群組：單選，必選（無預設，以 index 追蹤）
+  const [selectedReqIdx, setSelectedReqIdx] = useState<number | null>(null)
   // 一般客製：多選（以 index 追蹤，避免 DB 中重複 id 互相干擾）
   const [selected, setSelected] = useState<number[]>([])
   // 數量
@@ -44,10 +48,9 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
   const toggleRegular = (idx: number) =>
     setSelected(prev => prev.includes(idx) ? prev.filter(x => x !== idx) : [...prev, idx])
 
-  // 飲料兩題都必選才能送出
-  const canAdd = hasSizeOpts
+  const canAdd = (hasSizeOpts
     ? (selectedSizeId !== null && (!hasTempOpts || selectedTempId !== null))
-    : true
+    : true) && (!hasReqOpts || selectedReqIdx !== null)
 
   const handleAdd = () => {
     if (!canAdd) return
@@ -60,8 +63,12 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
       ? tempOptions.filter(t => t.id === selectedTempId)
       : []
 
+    const reqOpt: CartItemOption[] = hasReqOpts && selectedReqIdx !== null
+      ? [reqOptions[selectedReqIdx]]
+      : []
+
     const regularOpts = regularOptions.filter((_, idx) => selected.includes(idx))
-    onAdd([...sizeOpt, ...tempOpt, ...regularOpts], qty)
+    onAdd([...sizeOpt, ...tempOpt, ...reqOpt, ...regularOpts], qty)
     onClose()
   }
 
@@ -205,6 +212,27 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
             </div>
           )}
 
+          {/* ── 必選群組（req_ 前綴） ── */}
+          {hasReqOpts && (
+            <div>
+              <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: C.sub }}>
+                選擇種類 <span style={{ color: '#EF4444' }}>＊</span>
+              </p>
+              <div className="space-y-2">
+                {reqOptions.map((opt, idx) => (
+                  <SizeRow
+                    key={idx}
+                    id={String(idx)}
+                    label={opt.label}
+                    totalPrice={item.price + opt.price_delta}
+                    selected={selectedReqIdx === idx}
+                    onSelect={() => setSelectedReqIdx(idx)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* ── 溫度，僅飲料且有設溫度選項時顯示 ── */}
           {hasSizeOpts && hasTempOpts && (
             <div>
@@ -295,7 +323,10 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
             className="py-4 rounded-2xl text-base font-bold transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ flex: 2, background: canAdd ? C.primary : C.sub, color: '#fff' }}>
             {!canAdd
-              ? (selectedSizeId === null ? '請先選擇規格' : hasTempOpts ? '請先選擇溫度' : '請先選擇規格')
+              ? (hasSizeOpts && selectedSizeId === null ? '請先選擇規格'
+                : hasTempOpts && selectedTempId === null ? '請先選擇溫度'
+                : hasReqOpts && selectedReqIdx === null ? '請先選擇種類'
+                : '請先選擇')
               : hasSizeOpts && currentPrice !== null
                 ? `加入購物車 $${currentPrice * qty}`
                 : qty > 1
