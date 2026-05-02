@@ -668,7 +668,7 @@ export default function AdminMenuPage() {
                           <input type="number" value={opt.price_delta}
                             onChange={(e) => updateOption(i, 'price_delta', e.target.value)}
                             min={0} placeholder="0"
-                            className="w-full border rounded-lg pl-6 pr-3 py-2 text-sm outline-none"
+                            className="w-full border rounded-lg pl-8 pr-3 py-2 text-sm outline-none"
                             style={{ borderColor: '#D4B896', color: '#3D2B1F', fontSize: 16 }}
                           />
                         </div>
