@@ -663,12 +663,12 @@ export default function AdminMenuPage() {
                           className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none"
                           style={{ borderColor: opt.isRequired ? '#D97706' : '#D4B896', color: '#3D2B1F', fontSize: 16 }}
                         />
-                        <div className="relative w-24 shrink-0">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: '#C9A97A' }}>+</span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className="text-sm font-medium" style={{ color: '#C9A97A' }}>+$</span>
                           <input type="number" value={opt.price_delta}
                             onChange={(e) => updateOption(i, 'price_delta', e.target.value)}
                             min={0} placeholder="0"
-                            className="w-full border rounded-lg pl-12 pr-3 py-2 text-sm outline-none"
+                            className="w-16 border rounded-lg px-3 py-2 text-sm outline-none"
                             style={{ borderColor: '#D4B896', color: '#3D2B1F', fontSize: 16 }}
                           />
                         </div>
