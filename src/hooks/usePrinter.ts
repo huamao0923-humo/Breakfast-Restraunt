@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import { formatReceiptBytes } from '@/lib/printer'
 import type { Order } from '@/types'
 
 const PRINTER_SERVICE = 'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
@@ -10,7 +9,7 @@ const PRINTER_TX_CHAR = 'bef8d6c9-9c21-4c9e-b632-bd58c1009f9f'
 export type PrinterStatus = 'disconnected' | 'connecting' | 'connected'
 
 export function usePrinter() {
-  const [status, setStatus]   = useState<PrinterStatus>('disconnected')
+  const [status, setStatus]     = useState<PrinterStatus>('disconnected')
   const [printing, setPrinting] = useState(false)
   const charRef   = useRef<any>(null)
   const deviceRef = useRef<any>(null)
@@ -41,7 +40,7 @@ export function usePrinter() {
 
   const disconnect = useCallback(() => {
     deviceRef.current?.gatt?.disconnect()
-    charRef.current  = null
+    charRef.current   = null
     deviceRef.current = null
     setStatus('disconnected')
   }, [])
@@ -50,10 +49,18 @@ export function usePrinter() {
     if (!charRef.current) return false
     setPrinting(true)
     try {
-      const data  = formatReceiptBytes(order)
+      // server 端用 iconv-lite 轉 GBK，回傳 base64
+      const res = await fetch('/api/receipt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(order),
+      })
+      const { data } = await res.json()
+      const bytes = Uint8Array.from(atob(data), c => c.charCodeAt(0))
+
       const CHUNK = 200
-      for (let i = 0; i < data.length; i += CHUNK) {
-        const chunk = data.slice(i, i + CHUNK)
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        const chunk = bytes.slice(i, i + CHUNK)
         if (charRef.current.properties.writeWithoutResponse) {
           await charRef.current.writeValueWithoutResponse(chunk)
         } else {
