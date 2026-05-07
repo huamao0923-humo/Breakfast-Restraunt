@@ -14,8 +14,30 @@ export function usePrinter() {
   const charRef   = useRef<any>(null)
   const deviceRef = useRef<any>(null)
 
+  /** 對已記住的裝置靜默重連，不跳選擇視窗 */
+  const reconnect = useCallback(async (): Promise<boolean> => {
+    if (!deviceRef.current) return false
+    setStatus('connecting')
+    try {
+      const server  = await deviceRef.current.gatt.connect()
+      const service = await server.getPrimaryService(PRINTER_SERVICE)
+      charRef.current = await service.getCharacteristic(PRINTER_TX_CHAR)
+      setStatus('connected')
+      return true
+    } catch {
+      setStatus('disconnected')
+      charRef.current = null
+      return false
+    }
+  }, [])
+
+  /** 第一次連線，需使用者手動選擇裝置 */
   const connect = useCallback(async (): Promise<boolean> => {
     if (typeof navigator === 'undefined' || !('bluetooth' in navigator)) return false
+
+    // 裝置已記住 → 靜默重連，不重新跳視窗
+    if (deviceRef.current) return reconnect()
+
     setStatus('connecting')
     try {
       const device = await (navigator as any).bluetooth.requestDevice({
@@ -36,20 +58,24 @@ export function usePrinter() {
       setStatus('disconnected')
       return false
     }
-  }, [])
+  }, [reconnect])
 
   const disconnect = useCallback(() => {
     deviceRef.current?.gatt?.disconnect()
     charRef.current   = null
-    deviceRef.current = null
+    deviceRef.current = null   // 清除記憶，下次才會重新跳選擇視窗
     setStatus('disconnected')
   }, [])
 
   const print = useCallback(async (order: Order): Promise<boolean> => {
-    if (!charRef.current) return false
+    // 裝置斷線但仍記得 → 靜默重連後再列印
+    if (!charRef.current) {
+      const ok = await reconnect()
+      if (!ok) return false
+    }
+
     setPrinting(true)
     try {
-      // server 端用 iconv-lite 轉 GBK，回傳 base64
       const res = await fetch('/api/receipt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -75,7 +101,7 @@ export function usePrinter() {
     } finally {
       setPrinting(false)
     }
-  }, [])
+  }, [reconnect])
 
   return { status, printing, connect, disconnect, print }
 }
