@@ -10,6 +10,7 @@ const ALIGN_CENTER = ESC + '\x61\x01'
 const BOLD_ON      = ESC + '\x45\x01'
 const BOLD_OFF     = ESC + '\x45\x00'
 const CHINESE_ON   = FS  + '\x26'
+const LINE_SPACING = ESC + '\x33\x3C'  // ESC 3 60：行距調高一個級距（預設約 30）
 const LF           = '\n'
 const CUT          = GS  + '\x56\x41\x10'
 
@@ -101,15 +102,15 @@ export function formatReceiptString(order: Order, storeName = '忠國豆漿店')
   const parts: string[] = []
   const push = (...lines: string[]) => parts.push(...lines)
 
-  push(INIT, CHINESE_ON)
+  push(INIT, CHINESE_ON, LINE_SPACING)
 
   // ── 標題（大字）─────────────────────────────
   push(ALIGN_CENTER, SIZE_TITLE)
-  push(BOLD_ON, centerIn(storeName, PAPER_WIDTH_TITLE), BOLD_OFF, LF)
+  push(BOLD_ON, storeName, BOLD_OFF, LF)
 
   // ── 副標題（加高字）────────────────────────
   push(SIZE_LARGE)
-  push(centerIn('現點現做，感謝您耐心等待', PAPER_WIDTH), LF)
+  push('現點現做，感謝您耐心等待', LF)
   push(SIZE_NORMAL, divider(), LF)
 
   // ── 訂單資訊────────────────────────────────
