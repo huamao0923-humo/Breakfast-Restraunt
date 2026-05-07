@@ -3,6 +3,7 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import type { Order } from '@/types'
+import { usePrinter } from '@/hooks/usePrinter'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +20,8 @@ function KitchenContent() {
   const [loading, setLoading] = useState(true)
   const [cancelConfirm, setCancelConfirm] = useState<string | null>(null)
   const [cancelling, setCancelling] = useState(false)
+  const [printingId, setPrintingId] = useState<string | null>(null)
+  const printer = usePrinter()
 
   useEffect(() => {
     const fetchOrders = () =>
@@ -56,6 +59,16 @@ function KitchenContent() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'completed' }),
     })
+  }
+
+  const printOrder = async (order: Order) => {
+    if (printer.status !== 'connected') {
+      await printer.connect()
+      return
+    }
+    setPrintingId(order.id)
+    await printer.print(order)
+    setPrintingId(null)
   }
 
   const cancelOrder = async (id: string) => {
@@ -106,10 +119,29 @@ function KitchenContent() {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full inline-block"
-            style={{ background: '#6EE7B7', animation: 'pulse 2s infinite' }} />
-          <span className="text-xs tracking-wide" style={{ color: '#3D2010' }}>即時同步中</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full inline-block"
+              style={{ background: '#6EE7B7', animation: 'pulse 2s infinite' }} />
+            <span className="text-xs tracking-wide" style={{ color: '#3D2010' }}>即時同步中</span>
+          </div>
+          <button
+            onClick={printer.status === 'connected' ? printer.disconnect : printer.connect}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              background: 'rgba(0,0,0,0.12)', border: 'none', borderRadius: 20,
+              padding: '4px 10px', cursor: 'pointer',
+            }}>
+            <span style={{
+              width: 8, height: 8, borderRadius: '50%', display: 'inline-block',
+              background: printer.status === 'connected' ? '#6EE7B7'
+                        : printer.status === 'connecting' ? '#FCD34D' : '#F87171',
+            }} />
+            <span style={{ fontSize: 11, color: '#3D2010' }}>
+              {printer.status === 'connected' ? '印表機'
+               : printer.status === 'connecting' ? '連線中…' : '連接印表機'}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -203,6 +235,24 @@ function KitchenContent() {
                     <span className="text-sm" style={{ color: '#5C3D2E' }}>合計</span>
                     <span className="text-base font-bold" style={{ color: '#1C1C1E' }}>${order.total}</span>
                   </div>
+
+                  {/* Print Button */}
+                  <button
+                    onClick={() => printOrder(order)}
+                    disabled={printingId === order.id || printer.status === 'connecting'}
+                    className="w-full font-bold tracking-[2px] transition-all active:scale-[0.98]"
+                    style={{
+                      background: printer.status === 'connected' ? '#5C3D2E' : '#8C7455',
+                      color: '#FFF8DC',
+                      fontFamily: "'Noto Serif TC', serif",
+                      fontSize: 14,
+                      padding: '13px 0',
+                      border: 'none',
+                      cursor: 'pointer',
+                      opacity: printingId === order.id ? 0.6 : 1,
+                    }}>
+                    {printingId === order.id ? '列印中…' : '🖨  列印出單'}
+                  </button>
 
                   {/* Action Buttons */}
                   <div className="flex mt-auto">
