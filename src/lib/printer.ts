@@ -13,7 +13,13 @@ const CHINESE_ON   = FS  + '\x26'
 const LF           = '\n'
 const CUT          = GS  + '\x56\x41\x10'
 
-const PAPER_WIDTH = 32
+// 字體大小
+const SIZE_NORMAL   = GS + '!\x00'  // 標準
+const SIZE_LARGE    = GS + '!\x01'  // 加高（寬不變，行容量維持 32）
+const SIZE_TITLE    = GS + '!\x11'  // 標題：加寬加高（行容量縮為 16）
+
+const PAPER_WIDTH       = 32  // 標準 / 加高模式下的行寬
+const PAPER_WIDTH_TITLE = 16  // 加寬加高模式下的行寬
 
 function strWidth(s: string): number {
   let w = 0
@@ -21,12 +27,12 @@ function strWidth(s: string): number {
   return w
 }
 
-function padEnd(s: string, width: number): string {
-  return s + ' '.repeat(Math.max(0, width - strWidth(s)))
+function padEnd(s: string, targetW: number): string {
+  return s + ' '.repeat(Math.max(0, targetW - strWidth(s)))
 }
 
-function center(s: string): string {
-  const pad = Math.max(0, Math.floor((PAPER_WIDTH - strWidth(s)) / 2))
+function centerIn(s: string, width: number): string {
+  const pad = Math.max(0, Math.floor((width - strWidth(s)) / 2))
   return ' '.repeat(pad) + s
 }
 
@@ -34,7 +40,7 @@ function divider(char = '-'): string {
   return char.repeat(PAPER_WIDTH)
 }
 
-/** 將文字依 maxWidth 自動斷行，回傳各行陣列 */
+/** 將文字依 maxWidth 自動斷行 */
 function wrapText(text: string, maxWidth: number): string[] {
   const lines: string[] = []
   let current = ''
@@ -56,9 +62,8 @@ function wrapText(text: string, maxWidth: number): string[] {
 
 /**
  * 品項區塊：
- * - 品項名靠左，數量+金額靠右同行（若放得下）
- * - 名稱太長時自動換行，數量+金額接在最後一行右側
- * - 加料文字靠左縮排，超長自動換行
+ * - 品項名靠左，數量+金額靠右同行；名稱過長則換行，金額接在最後一行右側
+ * - 每項加料各自獨立一行，靠左縮排，超長自動換行
  */
 function itemBlock(
   name: string,
@@ -83,55 +88,67 @@ function itemBlock(
     lines.push(...nameLines)
   }
 
-  if (options.length) {
-    const optText   = options.map(o => o.label).join(' ')
-    const optLines  = wrapText(optText, PAPER_WIDTH - 2)
+  // 每項加料各自一行
+  for (const opt of options) {
+    const optLines = wrapText(opt.label, PAPER_WIDTH - 2)
     lines.push(...optLines.map(l => '  ' + l))
   }
 
   return lines
 }
 
-export function formatReceiptString(order: Order, storeName = '早餐店'): string {
+export function formatReceiptString(order: Order, storeName = '忠國豆漿店'): string {
   const parts: string[] = []
   const push = (...lines: string[]) => parts.push(...lines)
 
   push(INIT, CHINESE_ON)
 
-  push(ALIGN_CENTER, BOLD_ON, center(storeName), BOLD_OFF, LF)
-  push(divider(), LF)
+  // ── 標題（大字）─────────────────────────────
+  push(ALIGN_CENTER, SIZE_TITLE)
+  push(BOLD_ON, centerIn(storeName, PAPER_WIDTH_TITLE), BOLD_OFF, LF)
 
-  push(ALIGN_LEFT)
+  // ── 副標題（加高字）────────────────────────
+  push(SIZE_LARGE)
+  push(centerIn('現點現做，感謝您耐心等待', PAPER_WIDTH), LF)
+  push(SIZE_NORMAL, divider(), LF)
+
+  // ── 訂單資訊────────────────────────────────
+  push(ALIGN_LEFT, SIZE_LARGE)
   const label = order.table_id === 'takeout'
     ? `外帶 #${String(order.pickup_number ?? 0).padStart(3, '0')}`
     : `${order.table_id} 桌`
   const time = new Date(order.created_at).toLocaleTimeString('zh-TW', {
     hour: '2-digit', minute: '2-digit', hour12: false,
   })
-
   push(BOLD_ON, label, BOLD_OFF, LF)
   push(`時間: ${time}`, LF)
-  push(divider(), LF)
+  push(SIZE_NORMAL, divider(), LF)
 
+  // ── 品項────────────────────────────────────
+  push(SIZE_LARGE)
   for (const item of order.items) {
     const block = itemBlock(item.name, item.qty, item.price * item.qty, item.options ?? [])
     for (const line of block) push(line, LF)
   }
+  push(SIZE_NORMAL, divider(), LF)
 
-  push(divider(), LF)
-
+  // ── 合計────────────────────────────────────
+  push(SIZE_LARGE)
   const totalStr = `$${order.total}`
   push(BOLD_ON, padEnd('合計', PAPER_WIDTH - strWidth(totalStr)) + totalStr, BOLD_OFF, LF)
 
+  // ── 備註────────────────────────────────────
   if (order.note) {
-    push(divider('.'), LF)
-    const notePrefix = '備註: '
-    const noteLines  = wrapText(notePrefix + order.note, PAPER_WIDTH)
+    push(SIZE_NORMAL, divider('.'), LF, SIZE_LARGE)
+    const noteLines = wrapText('備註: ' + order.note, PAPER_WIDTH)
     for (const line of noteLines) push(line, LF)
   }
 
-  push(LF, LF, ALIGN_CENTER, center('謝謝光臨'), LF)
-  push(LF, LF, LF, CUT)
+  // ── 頁尾────────────────────────────────────
+  push(SIZE_NORMAL, LF, ALIGN_CENTER)
+  push(centerIn('謝謝光臨', PAPER_WIDTH), LF)
+  push(centerIn('[System by 華宇資訊]', PAPER_WIDTH), LF)
+  push(LF, LF, CUT)
 
   return parts.join('')
 }
