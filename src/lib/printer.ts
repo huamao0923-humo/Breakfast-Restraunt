@@ -34,6 +34,64 @@ function divider(char = '-'): string {
   return char.repeat(PAPER_WIDTH)
 }
 
+/** 將文字依 maxWidth 自動斷行，回傳各行陣列 */
+function wrapText(text: string, maxWidth: number): string[] {
+  const lines: string[] = []
+  let current = ''
+  let currentW = 0
+  for (const char of text) {
+    const charW = char.charCodeAt(0) > 0x7f ? 2 : 1
+    if (currentW + charW > maxWidth) {
+      lines.push(current)
+      current = char
+      currentW = charW
+    } else {
+      current += char
+      currentW += charW
+    }
+  }
+  if (current) lines.push(current)
+  return lines.length ? lines : ['']
+}
+
+/**
+ * 品項區塊：
+ * - 品項名靠左，數量+金額靠右同行（若放得下）
+ * - 名稱太長時自動換行，數量+金額接在最後一行右側
+ * - 加料文字靠左縮排，超長自動換行
+ */
+function itemBlock(
+  name: string,
+  qty: number,
+  subtotal: number,
+  options: { label: string }[],
+): string[] {
+  const right  = `x${qty}  $${subtotal}`
+  const rightW = strWidth(right)
+  const lines: string[] = []
+
+  if (strWidth(name) + rightW <= PAPER_WIDTH) {
+    lines.push(padEnd(name, PAPER_WIDTH - rightW) + right)
+  } else {
+    const nameLines = wrapText(name, PAPER_WIDTH)
+    const lastIdx   = nameLines.length - 1
+    if (strWidth(nameLines[lastIdx]) + rightW <= PAPER_WIDTH) {
+      nameLines[lastIdx] = padEnd(nameLines[lastIdx], PAPER_WIDTH - rightW) + right
+    } else {
+      nameLines.push(' '.repeat(PAPER_WIDTH - rightW) + right)
+    }
+    lines.push(...nameLines)
+  }
+
+  if (options.length) {
+    const optText   = options.map(o => o.label).join(' ')
+    const optLines  = wrapText(optText, PAPER_WIDTH - 2)
+    lines.push(...optLines.map(l => '  ' + l))
+  }
+
+  return lines
+}
+
 export function formatReceiptString(order: Order, storeName = '早餐店'): string {
   const parts: string[] = []
   const push = (...lines: string[]) => parts.push(...lines)
@@ -56,11 +114,8 @@ export function formatReceiptString(order: Order, storeName = '早餐店'): stri
   push(divider(), LF)
 
   for (const item of order.items) {
-    const right = `x${item.qty}  $${item.price * item.qty}`
-    push(padEnd(item.name, PAPER_WIDTH - strWidth(right)) + right, LF)
-    if (item.options?.length) {
-      push('  ' + item.options.map(o => o.label).join(' '), LF)
-    }
+    const block = itemBlock(item.name, item.qty, item.price * item.qty, item.options ?? [])
+    for (const line of block) push(line, LF)
   }
 
   push(divider(), LF)
@@ -70,7 +125,9 @@ export function formatReceiptString(order: Order, storeName = '早餐店'): stri
 
   if (order.note) {
     push(divider('.'), LF)
-    push(`備註: ${order.note}`, LF)
+    const notePrefix = '備註: '
+    const noteLines  = wrapText(notePrefix + order.note, PAPER_WIDTH)
+    for (const line of noteLines) push(line, LF)
   }
 
   push(LF, LF, ALIGN_CENTER, center('謝謝光臨'), LF)
