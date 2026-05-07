@@ -146,8 +146,8 @@ export function formatReceiptString(order: Order, storeName = '忠國豆漿店')
 
   // ── 頁尾────────────────────────────────────
   push(SIZE_NORMAL, LF, ALIGN_CENTER)
-  push(centerIn('謝謝光臨', PAPER_WIDTH), LF)
-  push(centerIn('[System by 華宇資訊]', PAPER_WIDTH), LF)
+  push('謝謝光臨', LF)
+  push('[System by 華宇資訊]', LF)
   push(LF, LF, CUT)
 
   return parts.join('')
