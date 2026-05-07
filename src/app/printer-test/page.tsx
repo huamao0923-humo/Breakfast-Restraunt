@@ -32,8 +32,8 @@ function escPos(text: string): Uint8Array {
 export default function PrinterTestPage() {
   const [status, setStatus]   = useState<Status>('idle')
   const [log, setLog]         = useState<string[]>([])
-  const [device, setDevice]   = useState<BluetoothDevice | null>(null)
-  const [txChar, setTxChar]   = useState<BluetoothRemoteGATTCharacteristic | null>(null)
+  const [device, setDevice]   = useState<any>(null)
+  const [txChar, setTxChar]   = useState<any>(null)
 
   const addLog = (msg: string) => setLog(prev => [...prev, `${new Date().toLocaleTimeString()} ${msg}`])
 
