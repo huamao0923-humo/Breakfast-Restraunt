@@ -18,7 +18,7 @@ function parseOrder(row: any) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { table_id, items, total, note, pickup_number: preassigned } = body
+    const { table_id, items, total, note, pickup_number: preassigned, customer_phone } = body
 
     if (!table_id || !items || total === undefined) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -26,7 +26,11 @@ export async function POST(request: NextRequest) {
 
     let pickup_number: number | null = null
 
-    if (table_id === 'takeout' || table_id === 'online') {
+    if (table_id === 'online') {
+      // 線上自取：取電話後三碼
+      const digits = (customer_phone || '').replace(/\D/g, '')
+      pickup_number = digits.length >= 3 ? parseInt(digits.slice(-3), 10) : null
+    } else if (table_id === 'takeout') {
       if (preassigned) {
         pickup_number = Number(preassigned)
       } else {
@@ -35,7 +39,7 @@ export async function POST(request: NextRequest) {
         const [{ max_num }] = await sql`
           SELECT COALESCE(MAX(pickup_number), 0) AS max_num
           FROM orders
-          WHERE (table_id = 'takeout' OR table_id = 'online')
+          WHERE table_id = 'takeout'
           AND created_at >= ${today.toISOString()}
         `
         pickup_number = (Number(max_num) || 0) + 1

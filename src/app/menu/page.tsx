@@ -228,6 +228,7 @@ function MenuContent() {
           note: table === 'online'
             ? [`[線上自取] ${customerName}・${customerPhone}`, orderNote].filter(Boolean).join('\n')
             : orderNote || null,
+          ...(table === 'online' ? { customer_phone: customerPhone } : {}),
         }),
       })
       if (!res.ok) return
