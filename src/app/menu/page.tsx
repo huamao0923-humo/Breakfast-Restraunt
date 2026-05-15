@@ -497,13 +497,13 @@ function MenuContent() {
             <div className="w-full max-w-xs rounded-2xl overflow-hidden mb-4"
               style={{ background: '#fff', border: '1px solid #E5DDD0', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
 
-              <div className="px-5 py-3 border-b" style={{ borderColor: '#EDE5D8' }}>
+              <div className="border-b" style={{ borderColor: '#EDE5D8', padding: '12px 24px' }}>
                 <p className="text-xs font-bold tracking-[3px]" style={{ color: '#9C7A5A' }}>訂單明細</p>
               </div>
 
-              <div className="px-5 py-2">
+              <div style={{ padding: '0 24px' }}>
                 {receipt.items.map((item, i) => (
-                  <div key={i} className="py-3 border-b last:border-b-0" style={{ borderColor: '#F0E8DC' }}>
+                  <div key={i} className="border-b last:border-b-0" style={{ borderColor: '#F0E8DC', padding: '12px 0' }}>
                     <div className="flex justify-between items-start">
                       <span className="text-sm font-semibold" style={{ color: '#3D2B1F' }}>{item.name}</span>
                       <div className="flex items-center gap-2 shrink-0 ml-4">
@@ -524,14 +524,14 @@ function MenuContent() {
               </div>
 
               {receipt.note && (
-                <div className="mx-5 mb-3 px-3 py-2 rounded-lg text-xs italic"
-                  style={{ background: '#FFFBEB', color: '#92400E', border: '1px dashed #FCD34D' }}>
+                <div className="rounded-lg text-xs italic"
+                  style={{ margin: '0 24px 12px', padding: '10px 14px', background: '#FFFBEB', color: '#92400E', border: '1px dashed #FCD34D' }}>
                   📝 {receipt.note}
                 </div>
               )}
 
-              <div className="flex justify-between items-center px-5 py-3 border-t"
-                style={{ borderColor: '#EDE5D8', background: '#FAF5EE' }}>
+              <div className="flex justify-between items-center border-t"
+                style={{ borderColor: '#EDE5D8', background: '#FAF5EE', padding: '12px 24px' }}>
                 <span className="text-sm font-semibold" style={{ color: '#7A5240' }}>合計</span>
                 <span className="text-lg font-black" style={{ color: '#3D2B1F' }}>${receipt.total}</span>
               </div>

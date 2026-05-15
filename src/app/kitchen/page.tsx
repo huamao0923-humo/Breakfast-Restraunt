@@ -24,8 +24,33 @@ function KitchenContent() {
   const [printingId, setPrintingId] = useState<string | null>(null)
   const printer = usePrinter()
   const audioCtx = useRef<AudioContext | null>(null)
+  const playDingDongRef = useRef<() => void>(() => {})
 
-  // 使用者第一次點擊頁面時建立 AudioContext（瀏覽器安全限制）
+  // 每次 render 更新 ref，確保 SSE listener 永遠拿到最新版本
+  playDingDongRef.current = () => {
+    const ctx = audioCtx.current
+    if (!ctx) return
+    const doPlay = () => {
+      const play = (freq: number, start: number, duration: number) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + start)
+        gain.gain.setValueAtTime(0.7, ctx.currentTime + start)
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration)
+        osc.start(ctx.currentTime + start)
+        osc.stop(ctx.currentTime + start + duration)
+      }
+      play(880, 0, 0.7)    // 叮
+      play(587, 0.4, 0.9)  // 咚
+    }
+    if (ctx.state === 'suspended') ctx.resume().then(doPlay)
+    else doPlay()
+  }
+
+  // 建立 AudioContext（需在使用者互動後）
   useEffect(() => {
     const unlock = () => {
       if (!audioCtx.current) {
@@ -35,28 +60,12 @@ function KitchenContent() {
       }
     }
     window.addEventListener('click', unlock, { once: false })
-    return () => window.removeEventListener('click', unlock)
-  }, [])
-
-  const playDingDong = () => {
-    const ctx = audioCtx.current
-    if (!ctx) return
-    if (ctx.state === 'suspended') ctx.resume()
-    const play = (freq: number, start: number, duration: number) => {
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-      osc.type = 'sine'
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + start)
-      gain.gain.setValueAtTime(0.7, ctx.currentTime + start)
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration)
-      osc.start(ctx.currentTime + start)
-      osc.stop(ctx.currentTime + start + duration)
+    window.addEventListener('touchstart', unlock, { once: false })
+    return () => {
+      window.removeEventListener('click', unlock)
+      window.removeEventListener('touchstart', unlock)
     }
-    play(880, 0, 0.7)    // 叮
-    play(587, 0.4, 0.9)  // 咚
-  }
+  }, [])
 
   useEffect(() => {
     const fetchOrders = () =>
@@ -75,7 +84,7 @@ function KitchenContent() {
       order.items = Array.isArray(order.items) ? order.items
         : typeof order.items === 'string' ? JSON.parse(order.items) : []
       setOrders((prev) => [order, ...prev])
-      playDingDong()
+      playDingDongRef.current()
     })
 
     es.addEventListener('order-updated', (e) => {
