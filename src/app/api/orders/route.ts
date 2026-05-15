@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
     `
 
     const parsed = parseOrder(order)
+    emit('kitchen', 'new-order', parsed)
 
     return NextResponse.json({ id: parsed.id, pickup_number }, { status: 201 })
   } catch (error) {
