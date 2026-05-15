@@ -280,32 +280,6 @@ function MenuContent() {
   })
 
   // ── 共用購物車底部操作區 ───────────────────────────────
-  const CartFooter = () => (
-    <div className="shrink-0 border-t p-4 space-y-3"
-      style={{ borderColor: C.border, paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
-      <input
-        type="text" value={orderNote}
-        onChange={e => setOrderNote(e.target.value)}
-        placeholder="備註（例：不加蔥、少辣）"
-        className="w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none"
-        style={{ border: `1.5px solid ${C.border}`, background: C.bg, color: C.text, fontSize: 16 }}
-      />
-      <div className="flex justify-between items-end">
-        <span className="text-sm font-semibold" style={{ color: C.sub }}>結帳總計</span>
-        <span className="text-3xl font-black" style={{ color: '#DC2626' }}>${total.toLocaleString()}</span>
-      </div>
-      <button
-        onClick={handleSubmitOrder}
-        disabled={totalQty === 0 || submitting}
-        className="w-full rounded-xl py-4 text-base font-bold tracking-wide transition-all active:scale-[0.98] disabled:opacity-40"
-        style={{
-          background: totalQty > 0 ? C.primary : C.muted, color: '#fff',
-          boxShadow: totalQty > 0 ? '0 8px 20px rgba(217,119,6,0.3)' : 'none',
-        }}>
-        {submitting ? '送出中…' : '確認送出訂單'}
-      </button>
-    </div>
-  )
 
   return (
     <div className="font-sans" style={{ background: C.bg }}>
@@ -430,8 +404,30 @@ function MenuContent() {
                 )
               })}
             </div>
-            <div className="px-6">
-              <CartFooter />
+            <div className="shrink-0 border-t p-4 space-y-3"
+              style={{ borderColor: C.border, paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
+              <input
+                type="text"
+                value={orderNote}
+                onChange={e => setOrderNote(e.target.value)}
+                placeholder="備註（例：不加蔥、少辣）"
+                className="w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none"
+                style={{ border: `1.5px solid ${C.border}`, background: C.bg, color: C.text, fontSize: 16 }}
+              />
+              <div className="flex justify-between items-end">
+                <span className="text-sm font-semibold" style={{ color: C.sub }}>結帳總計</span>
+                <span className="text-3xl font-black" style={{ color: '#DC2626' }}>${total.toLocaleString()}</span>
+              </div>
+              <button
+                onClick={handleSubmitOrder}
+                disabled={totalQty === 0 || submitting}
+                className="w-full rounded-xl py-4 text-base font-bold tracking-wide transition-all active:scale-[0.98] disabled:opacity-40"
+                style={{
+                  background: totalQty > 0 ? C.primary : C.muted, color: '#fff',
+                  boxShadow: totalQty > 0 ? '0 8px 20px rgba(217,119,6,0.3)' : 'none',
+                }}>
+                {submitting ? '送出中…' : '確認送出訂單'}
+              </button>
             </div>
           </div>
         </div>
