@@ -1,7 +1,7 @@
 // Path: src/app/kitchen/page.tsx
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import type { Order } from '@/types'
 import { usePrinter } from '@/hooks/usePrinter'
 
@@ -14,25 +14,6 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(diff / 3600)} 小時前`
 }
 
-function playDingDong() {
-  try {
-    const ctx = new AudioContext()
-    const play = (freq: number, start: number, duration: number) => {
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-      osc.type = 'sine'
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + start)
-      gain.gain.setValueAtTime(0.6, ctx.currentTime + start)
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration)
-      osc.start(ctx.currentTime + start)
-      osc.stop(ctx.currentTime + start + duration)
-    }
-    play(880, 0, 0.6)   // 叮
-    play(587, 0.35, 0.8) // 咚
-  } catch {}
-}
 
 function KitchenContent() {
   const [orders, setOrders] = useState<Order[]>([])
@@ -42,6 +23,40 @@ function KitchenContent() {
   const [cancelling, setCancelling] = useState(false)
   const [printingId, setPrintingId] = useState<string | null>(null)
   const printer = usePrinter()
+  const audioCtx = useRef<AudioContext | null>(null)
+
+  // 使用者第一次點擊頁面時建立 AudioContext（瀏覽器安全限制）
+  useEffect(() => {
+    const unlock = () => {
+      if (!audioCtx.current) {
+        audioCtx.current = new AudioContext()
+      } else if (audioCtx.current.state === 'suspended') {
+        audioCtx.current.resume()
+      }
+    }
+    window.addEventListener('click', unlock, { once: false })
+    return () => window.removeEventListener('click', unlock)
+  }, [])
+
+  const playDingDong = () => {
+    const ctx = audioCtx.current
+    if (!ctx) return
+    if (ctx.state === 'suspended') ctx.resume()
+    const play = (freq: number, start: number, duration: number) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + start)
+      gain.gain.setValueAtTime(0.7, ctx.currentTime + start)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration)
+      osc.start(ctx.currentTime + start)
+      osc.stop(ctx.currentTime + start + duration)
+    }
+    play(880, 0, 0.7)    // 叮
+    play(587, 0.4, 0.9)  // 咚
+  }
 
   useEffect(() => {
     const fetchOrders = () =>
