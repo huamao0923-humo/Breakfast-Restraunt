@@ -174,23 +174,26 @@ function KitchenContent() {
                     style={{ background: headerBg, borderBottom: '1px solid rgba(0,0,0,0.12)', padding: '15px 25px' }}>
                     <div className="flex items-center gap-2">
                       {order.table_id === 'takeout' ? (
-                        <span className="text-base font-bold tracking-[2px]" style={{ color: '#3D2010' }}>
+                        <span className="font-bold tracking-[2px] rounded-lg"
+                          style={{ background: '#3D6B4F', color: '#E6F5EC', fontSize: 14, padding: '5px 12px' }}>
                           外帶 #{order.pickup_number != null ? String(order.pickup_number).padStart(3, '0') : '---'}
                         </span>
                       ) : order.table_id === 'online' ? (
                         <div>
-                          <span className="text-base font-bold tracking-[2px]" style={{ color: '#3D2010' }}>
+                          <span className="font-bold tracking-[2px] rounded-lg inline-block"
+                            style={{ background: '#5C3D8F', color: '#EDE6FF', fontSize: 14, padding: '5px 12px' }}>
                             線上自取 #{order.pickup_number != null ? String(order.pickup_number).padStart(3, '0') : '---'}
                           </span>
                           {order.note?.startsWith('[線上自取]') && (
-                            <p className="text-xs mt-0.5" style={{ color: '#5C3D2E' }}>
+                            <p className="text-xs mt-1" style={{ color: '#5C3D2E' }}>
                               {order.note.split('\n')[0].replace('[線上自取] ', '')}
                             </p>
                           )}
                         </div>
                       ) : (
-                        <span className="text-base font-bold tracking-[2px]" style={{ color: '#3D2010' }}>
-                          {order.table_id} 桌
+                        <span className="font-bold tracking-[2px] rounded-lg"
+                          style={{ background: '#8F4B1A', color: '#FFF0E0', fontSize: 14, padding: '5px 12px' }}>
+                          內用 {order.table_id} 桌
                         </span>
                       )}
                       {isNew && (
