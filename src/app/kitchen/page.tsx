@@ -175,13 +175,13 @@ function KitchenContent() {
                     <div className="flex items-center gap-2">
                       {order.table_id === 'takeout' ? (
                         <span className="font-bold tracking-[2px] rounded-lg"
-                          style={{ background: '#3D6B4F', color: '#E6F5EC', fontSize: 14, padding: '5px 12px' }}>
+                          style={{ background: '#5C3D8F', color: '#EDE6FF', fontSize: 14, padding: '5px 12px' }}>
                           外帶 #{order.pickup_number != null ? String(order.pickup_number).padStart(3, '0') : '---'}
                         </span>
                       ) : order.table_id === 'online' ? (
                         <div>
                           <span className="font-bold tracking-[2px] rounded-lg inline-block"
-                            style={{ background: '#5C3D8F', color: '#EDE6FF', fontSize: 14, padding: '5px 12px' }}>
+                            style={{ background: '#3D6B4F', color: '#E6F5EC', fontSize: 14, padding: '5px 12px' }}>
                             線上自取 #{order.pickup_number != null ? String(order.pickup_number).padStart(3, '0') : '---'}
                           </span>
                           {order.note?.startsWith('[線上自取]') && (
