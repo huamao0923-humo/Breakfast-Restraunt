@@ -49,5 +49,7 @@ export interface Order {
   status: 'pending' | 'completed' | 'cancelled'
   paid: boolean
   transaction_id?: string | null
+  customer_name?: string | null
+  customer_phone?: string | null
   created_at: string
 }

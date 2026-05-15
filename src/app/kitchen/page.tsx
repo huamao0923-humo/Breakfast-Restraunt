@@ -177,6 +177,19 @@ function KitchenContent() {
                         <span className="text-base font-bold tracking-[2px]" style={{ color: '#3D2010' }}>
                           外帶 #{order.pickup_number != null ? String(order.pickup_number).padStart(3, '0') : '---'}
                         </span>
+                      ) : order.table_id === 'online' ? (
+                        <div>
+                          <span className="text-base font-bold tracking-[2px]" style={{ color: '#3D2010' }}>
+                            線上自取 #{order.pickup_number != null ? String(order.pickup_number).padStart(3, '0') : '---'}
+                          </span>
+                          {(order.customer_name || order.customer_phone) && (
+                            <p className="text-xs mt-0.5" style={{ color: '#5C3D2E' }}>
+                              {order.customer_name && <span>{order.customer_name}</span>}
+                              {order.customer_name && order.customer_phone && <span>・</span>}
+                              {order.customer_phone && <span>{order.customer_phone}</span>}
+                            </p>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-base font-bold tracking-[2px]" style={{ color: '#3D2010' }}>
                           {order.table_id} 桌

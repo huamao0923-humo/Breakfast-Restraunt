@@ -151,7 +151,9 @@ type ReceiptData = { items: ReceiptItem[]; total: number; note: string; pickupNu
 
 function MenuContent() {
   const searchParams = useSearchParams()
-  const table = searchParams.get('table') || 'A1'
+  const table        = searchParams.get('table') || 'A1'
+  const customerName  = searchParams.get('customer_name') || ''
+  const customerPhone = searchParams.get('customer_phone') || ''
 
   const [menuData, setMenuData]       = useState<MenuCategory[]>([])
   const [menuLoading, setMenuLoading] = useState(true)
@@ -219,7 +221,13 @@ function MenuContent() {
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ table_id: table, items: formattedItems, total, note: orderNote || null }),
+        body: JSON.stringify({
+          table_id: table,
+          items: formattedItems,
+          total,
+          note: orderNote || null,
+          ...(table === 'online' ? { customer_name: customerName, customer_phone: customerPhone } : {}),
+        }),
       })
       if (!res.ok) return
       const data = await res.json()
@@ -444,10 +452,16 @@ function MenuContent() {
             <p className="text-base font-bold tracking-[4px] mb-1" style={{ color: '#3D2B1F' }}>忠國豆漿</p>
             <p className="text-xs tracking-[2px] mb-6" style={{ color: '#9C7A5A' }}>訂單已送出 ✓</p>
 
-            {/* 外帶號碼牌 */}
+            {/* 取餐號碼牌（外帶 / 線上自取） */}
             {receipt.pickupNumber != null && (
               <div className="w-full max-w-xs rounded-3xl flex flex-col items-center py-8 mb-6 pop-in"
                 style={{ background: '#5C3D2E', boxShadow: '0 8px 32px rgba(92,61,46,0.35)' }}>
+                {table === 'online' && customerName && (
+                  <p className="text-sm font-semibold tracking-[2px] mb-1"
+                    style={{ color: 'rgba(245,230,200,0.85)' }}>
+                    {customerName} 您好
+                  </p>
+                )}
                 <p className="text-xs font-semibold tracking-[4px] mb-3"
                   style={{ color: 'rgba(245,230,200,0.7)' }}>取餐號碼</p>
                 <p className="font-black leading-none"
@@ -455,7 +469,7 @@ function MenuContent() {
                   {String(receipt.pickupNumber).padStart(3, '0')}
                 </p>
                 <p className="text-xs mt-4" style={{ color: 'rgba(245,230,200,0.55)' }}>
-                  聽到叫號請至櫃台取餐
+                  {table === 'online' ? '請憑號碼至店內取餐' : '聽到叫號請至櫃台取餐'}
                 </p>
               </div>
             )}

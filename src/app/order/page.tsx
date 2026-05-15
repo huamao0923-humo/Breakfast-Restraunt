@@ -5,15 +5,32 @@ import { useRouter } from 'next/navigation'
 
 const TABLES = [1, 2, 3, 4, 5]
 
-type Step = 'choose' | 'table'
+type Step = 'choose' | 'table' | 'online'
 
 export default function OrderLandingPage() {
   const router = useRouter()
   const [step, setStep] = useState<Step>('choose')
+  const [customerName, setCustomerName]   = useState('')
+  const [customerPhone, setCustomerPhone] = useState('')
+  const [errors, setErrors] = useState<{ name?: string; phone?: string }>({})
 
   const goTakeout = () => router.push('/menu?table=takeout')
   const goDineIn  = () => setStep('table')
   const goTable   = (n: number) => router.push(`/menu?table=${n}`)
+
+  const validateOnline = () => {
+    const e: { name?: string; phone?: string } = {}
+    if (!customerName.trim()) e.name = '請填寫稱呼'
+    if (!customerPhone.trim()) e.phone = '請填寫電話號碼'
+    else if (!/^[0-9\-+\s]{7,15}$/.test(customerPhone.trim())) e.phone = '請輸入有效電話號碼'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
+  const goOnline = () => {
+    if (!validateOnline()) return
+    router.push(`/menu?table=online&customer_name=${encodeURIComponent(customerName.trim())}&customer_phone=${encodeURIComponent(customerPhone.trim())}`)
+  }
 
   return (
     <div
@@ -32,7 +49,7 @@ export default function OrderLandingPage() {
           </p>
         </div>
 
-        {/* ── Step 1：選擇外帶 / 內用 ── */}
+        {/* ── Step 1：選擇用餐方式 ── */}
         {step === 'choose' && (
           <>
             <p className="text-center text-base font-semibold mb-6" style={{ color: '#5C3D2E' }}>
@@ -69,6 +86,24 @@ export default function OrderLandingPage() {
                 </span>
                 <span className="text-xs" style={{ color: '#9C7A5A' }}>
                   選擇桌號，輕鬆享用
+                </span>
+              </button>
+
+              <button
+                onClick={() => setStep('online')}
+                className="w-full rounded-2xl py-6 flex flex-col items-center gap-2 transition-all active:scale-[0.97]"
+                style={{
+                  background: '#FFFDF7',
+                  border: '2px solid #A8926E',
+                  boxShadow: '0 2px 8px rgba(92,61,46,0.08)',
+                }}
+              >
+                <span className="text-4xl">📱</span>
+                <span className="text-xl font-bold tracking-[4px]" style={{ color: '#3D2B1F' }}>
+                  線上自取
+                </span>
+                <span className="text-xs" style={{ color: '#9C7A5A' }}>
+                  在家點餐，到店取餐
                 </span>
               </button>
             </div>
@@ -111,6 +146,88 @@ export default function OrderLandingPage() {
 
             <p className="text-center text-xs mt-6" style={{ color: '#C9A97A' }}>
               選錯了？點左上角返回重選
+            </p>
+          </>
+        )}
+
+        {/* ── Step 3：線上自取填寫資料 ── */}
+        {step === 'online' && (
+          <>
+            <div className="flex items-center gap-3 mb-6">
+              <button
+                onClick={() => { setStep('choose'); setErrors({}) }}
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
+                style={{ background: '#EDE5D8', color: '#5C3D2E', fontSize: 18 }}
+              >
+                ‹
+              </button>
+              <p className="text-base font-semibold" style={{ color: '#5C3D2E' }}>
+                線上點餐自取
+              </p>
+            </div>
+
+            <p className="text-sm mb-6" style={{ color: '#7A5C3A' }}>
+              請填寫基本資料，方便我們準備餐點並通知您
+            </p>
+
+            <div className="flex flex-col gap-4">
+              {/* 稱呼 */}
+              <div>
+                <label className="text-sm font-semibold block mb-1.5" style={{ color: '#5C3D2E' }}>
+                  稱呼
+                </label>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => { setCustomerName(e.target.value); setErrors(v => ({ ...v, name: undefined })) }}
+                  placeholder="例：王小明"
+                  className="w-full rounded-xl px-4 py-3 text-base outline-none transition-all"
+                  style={{
+                    border: `2px solid ${errors.name ? '#EF4444' : '#D4B896'}`,
+                    background: '#FFFDF7',
+                    color: '#3D2B1F',
+                    fontFamily: "'Noto Serif TC', serif",
+                  }}
+                />
+                {errors.name && (
+                  <p className="text-xs mt-1" style={{ color: '#EF4444' }}>{errors.name}</p>
+                )}
+              </div>
+
+              {/* 電話 */}
+              <div>
+                <label className="text-sm font-semibold block mb-1.5" style={{ color: '#5C3D2E' }}>
+                  電話號碼
+                </label>
+                <input
+                  type="tel"
+                  value={customerPhone}
+                  onChange={(e) => { setCustomerPhone(e.target.value); setErrors(v => ({ ...v, phone: undefined })) }}
+                  placeholder="例：0912-345-678"
+                  className="w-full rounded-xl px-4 py-3 text-base outline-none transition-all"
+                  style={{
+                    border: `2px solid ${errors.phone ? '#EF4444' : '#D4B896'}`,
+                    background: '#FFFDF7',
+                    color: '#3D2B1F',
+                    fontFamily: "'Noto Serif TC', serif",
+                  }}
+                />
+                {errors.phone && (
+                  <p className="text-xs mt-1" style={{ color: '#EF4444' }}>{errors.phone}</p>
+                )}
+              </div>
+
+              <button
+                onClick={goOnline}
+                className="w-full rounded-2xl py-4 font-bold text-base tracking-[4px] transition-all active:scale-[0.97] mt-2"
+                style={{ background: '#5C3D2E', color: '#F5E6C8', boxShadow: '0 4px 16px rgba(92,61,46,0.25)' }}
+              >
+                開始點餐
+              </button>
+            </div>
+
+            <p className="text-center text-xs mt-5" style={{ color: '#C9A97A' }}>
+              完成點餐後將發放取餐號碼牌
             </p>
           </>
         )}
