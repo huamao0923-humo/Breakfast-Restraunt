@@ -182,11 +182,9 @@ function KitchenContent() {
                           <span className="text-base font-bold tracking-[2px]" style={{ color: '#3D2010' }}>
                             線上自取 #{order.pickup_number != null ? String(order.pickup_number).padStart(3, '0') : '---'}
                           </span>
-                          {(order.customer_name || order.customer_phone) && (
+                          {order.note?.startsWith('[線上自取]') && (
                             <p className="text-xs mt-0.5" style={{ color: '#5C3D2E' }}>
-                              {order.customer_name && <span>{order.customer_name}</span>}
-                              {order.customer_name && order.customer_phone && <span>・</span>}
-                              {order.customer_phone && <span>{order.customer_phone}</span>}
+                              {order.note.split('\n')[0].replace('[線上自取] ', '')}
                             </p>
                           )}
                         </div>
@@ -235,12 +233,17 @@ function KitchenContent() {
                   </div>
 
                   {/* Note */}
-                  {order.note && (
-                    <div className="rounded-lg italic"
-                      style={{ margin: '0 25px 12px', padding: '10px 14px', fontSize: 13, background: 'rgba(255,255,255,0.35)', color: '#3D2010', border: '1px dashed rgba(0,0,0,0.2)' }}>
-                      📝 {order.note}
-                    </div>
-                  )}
+                  {(() => {
+                    const displayNote = order.table_id === 'online' && order.note?.startsWith('[線上自取]')
+                      ? order.note.split('\n').slice(1).join('\n').trim()
+                      : order.note
+                    return displayNote ? (
+                      <div className="rounded-lg italic"
+                        style={{ margin: '0 25px 12px', padding: '10px 14px', fontSize: 13, background: 'rgba(255,255,255,0.35)', color: '#3D2010', border: '1px dashed rgba(0,0,0,0.2)' }}>
+                        📝 {displayNote}
+                      </div>
+                    ) : null
+                  })()}
 
                   {/* Total */}
                   <div className="flex justify-between items-center border-t"

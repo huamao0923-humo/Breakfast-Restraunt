@@ -18,7 +18,7 @@ function parseOrder(row: any) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { table_id, items, total, note, pickup_number: preassigned, customer_name, customer_phone } = body
+    const { table_id, items, total, note, pickup_number: preassigned } = body
 
     if (!table_id || !items || total === undefined) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     const [order] = await sql`
-      INSERT INTO orders (table_id, pickup_number, items, total, note, status, paid, customer_name, customer_phone)
+      INSERT INTO orders (table_id, pickup_number, items, total, note, status, paid)
       VALUES (
         ${table_id},
         ${pickup_number},
@@ -51,9 +51,7 @@ export async function POST(request: NextRequest) {
         ${total},
         ${note || null},
         'pending',
-        false,
-        ${customer_name || null},
-        ${customer_phone || null}
+        false
       )
       RETURNING *
     `

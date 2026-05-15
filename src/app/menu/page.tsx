@@ -147,7 +147,7 @@ function CartRow({ item, idx, onMinus, onPlus, onEdit, hasOpts }: {
 
 // ── 主元件 ───────────────────────────────────────────────
 type ReceiptItem = { name: string; qty: number; unitPrice: number; options: { label: string }[] }
-type ReceiptData = { items: ReceiptItem[]; total: number; note: string; pickupNumber: number | null }
+type ReceiptData = { items: ReceiptItem[]; total: number; note: string; pickupNumber: number | null; customerName?: string; customerPhone?: string }
 
 function MenuContent() {
   const searchParams = useSearchParams()
@@ -225,8 +225,9 @@ function MenuContent() {
           table_id: table,
           items: formattedItems,
           total,
-          note: orderNote || null,
-          ...(table === 'online' ? { customer_name: customerName, customer_phone: customerPhone } : {}),
+          note: table === 'online'
+            ? [`[線上自取] ${customerName}・${customerPhone}`, orderNote].filter(Boolean).join('\n')
+            : orderNote || null,
         }),
       })
       if (!res.ok) return
@@ -241,7 +242,13 @@ function MenuContent() {
       clearCart()
       setOrderNote('')
       setShowCart(false)
-      setReceipt({ items: receiptItems, total, note: orderNote, pickupNumber: data.pickup_number ?? null })
+      setReceipt({
+        items: receiptItems,
+        total,
+        note: orderNote,
+        pickupNumber: data.pickup_number ?? null,
+        ...(table === 'online' ? { customerName, customerPhone } : {}),
+      })
     } catch (e) {
       console.error(e)
     } finally {
@@ -456,10 +463,15 @@ function MenuContent() {
             {receipt.pickupNumber != null && (
               <div className="w-full max-w-xs rounded-3xl flex flex-col items-center py-8 mb-6 pop-in"
                 style={{ background: '#5C3D2E', boxShadow: '0 8px 32px rgba(92,61,46,0.35)' }}>
-                {table === 'online' && customerName && (
+                {receipt.customerName && (
                   <p className="text-sm font-semibold tracking-[2px] mb-1"
-                    style={{ color: 'rgba(245,230,200,0.85)' }}>
-                    {customerName} 您好
+                    style={{ color: 'rgba(245,230,200,0.9)' }}>
+                    {receipt.customerName} 您好
+                  </p>
+                )}
+                {receipt.customerPhone && (
+                  <p className="text-xs mb-3" style={{ color: 'rgba(245,230,200,0.6)' }}>
+                    {receipt.customerPhone}
                   </p>
                 )}
                 <p className="text-xs font-semibold tracking-[4px] mb-3"
@@ -469,7 +481,7 @@ function MenuContent() {
                   {String(receipt.pickupNumber).padStart(3, '0')}
                 </p>
                 <p className="text-xs mt-4" style={{ color: 'rgba(245,230,200,0.55)' }}>
-                  {table === 'online' ? '請憑號碼至店內取餐' : '聽到叫號請至櫃台取餐'}
+                  {receipt.customerName ? '請憑號碼至店內取餐' : '聽到叫號請至櫃台取餐'}
                 </p>
               </div>
             )}
