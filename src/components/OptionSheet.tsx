@@ -86,9 +86,10 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
   }: { id: string; label: string; totalPrice: number; selected: boolean; onSelect: () => void }) => (
     <button
       onClick={onSelect}
-      className="w-full flex items-center justify-between rounded-2xl px-4 transition-all active:scale-[0.98]"
+      className="w-full flex items-center justify-between rounded-2xl transition-all active:scale-[0.98]"
       style={{
         minHeight: 60,
+        padding: '0 16px',
         background: isSelected ? '#FEF3C7' : C.pill,
         border: `2px solid ${isSelected ? C.primary : 'transparent'}`,
       }}
@@ -117,9 +118,10 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
   }: { id: string; label: string; priceDelta: number; checked: boolean; onToggle: () => void }) => (
     <button
       onClick={onToggle}
-      className="w-full flex items-center justify-between rounded-2xl px-4 transition-all active:scale-[0.98]"
+      className="w-full flex items-center justify-between rounded-2xl transition-all active:scale-[0.98]"
       style={{
         minHeight: 56,
+        padding: '0 16px',
         background: checked ? '#FEF3C7' : C.pill,
         border: `2px solid ${checked ? C.primary : 'transparent'}`,
       }}
@@ -170,7 +172,7 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
         </div>
 
         {/* 品名 header */}
-        <div className="px-6 pb-4 border-b shrink-0" style={{ borderColor: C.border }}>
+        <div className="border-b shrink-0" style={{ borderColor: C.border, padding: '0 20px 16px' }}>
           <div className="flex justify-between items-baseline">
             <h3 className="text-xl font-bold" style={{ color: C.text }}>{item.name}</h3>
             {!hasSizeOpts && (
@@ -182,7 +184,7 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
         </div>
 
         {/* 選項區（可捲動） */}
-        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-5">
+        <div className="overflow-y-auto flex-1 space-y-5" style={{ padding: '16px 20px' }}>
 
           {/* ── 規格（大杯 / 小杯）單選 ── */}
           {hasSizeOpts && (
@@ -293,7 +295,7 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
         </div>
 
         {/* 數量選擇 */}
-        <div className="px-6 pt-3 pb-1 flex items-center justify-center gap-5 border-t shrink-0" style={{ borderColor: C.border }}>
+        <div className="flex items-center justify-center gap-5 border-t shrink-0" style={{ borderColor: C.border, padding: '12px 20px 4px' }}>
           <button
             onClick={() => setQty(q => Math.max(1, q - 1))}
             className="w-10 h-10 rounded-full flex items-center justify-center text-xl font-bold transition-all active:scale-90"
@@ -310,7 +312,7 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
         </div>
 
         {/* 底部按鈕 */}
-        <div className="px-6 pt-3 pb-5 flex gap-3 shrink-0">
+        <div className="flex gap-3 shrink-0" style={{ padding: '12px 20px 20px' }}>
           <button
             onClick={onClose}
             className="flex-1 py-4 rounded-2xl text-base font-bold transition-all active:scale-95"
