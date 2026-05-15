@@ -14,6 +14,26 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(diff / 3600)} 小時前`
 }
 
+function playDingDong() {
+  try {
+    const ctx = new AudioContext()
+    const play = (freq: number, start: number, duration: number) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + start)
+      gain.gain.setValueAtTime(0.6, ctx.currentTime + start)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration)
+      osc.start(ctx.currentTime + start)
+      osc.stop(ctx.currentTime + start + duration)
+    }
+    play(880, 0, 0.6)   // 叮
+    play(587, 0.35, 0.8) // 咚
+  } catch {}
+}
+
 function KitchenContent() {
   const [orders, setOrders] = useState<Order[]>([])
   const [done, setDone] = useState<Set<string>>(new Set())
@@ -40,6 +60,7 @@ function KitchenContent() {
       order.items = Array.isArray(order.items) ? order.items
         : typeof order.items === 'string' ? JSON.parse(order.items) : []
       setOrders((prev) => [order, ...prev])
+      playDingDong()
     })
 
     es.addEventListener('order-updated', (e) => {
@@ -175,13 +196,13 @@ function KitchenContent() {
                     <div className="flex items-center gap-2">
                       {order.table_id === 'takeout' ? (
                         <span className="font-bold tracking-[2px] rounded-lg"
-                          style={{ background: '#5C3D8F', color: '#EDE6FF', fontSize: 14, padding: '5px 12px' }}>
+                          style={{ background: '#FF8C00', color: '#fff', fontSize: 14, padding: '5px 12px' }}>
                           外帶 #{order.pickup_number != null ? String(order.pickup_number).padStart(3, '0') : '---'}
                         </span>
                       ) : order.table_id === 'online' ? (
                         <div>
                           <span className="font-bold tracking-[2px] rounded-lg inline-block"
-                            style={{ background: '#3D6B4F', color: '#E6F5EC', fontSize: 14, padding: '5px 12px' }}>
+                            style={{ background: '#228B22', color: '#fff', fontSize: 14, padding: '5px 12px' }}>
                             線上自取 #{order.pickup_number != null ? String(order.pickup_number).padStart(3, '0') : '---'}
                           </span>
                           {order.note?.startsWith('[線上自取]') && (
@@ -192,7 +213,7 @@ function KitchenContent() {
                         </div>
                       ) : (
                         <span className="font-bold tracking-[2px] rounded-lg"
-                          style={{ background: '#8F4B1A', color: '#FFF0E0', fontSize: 14, padding: '5px 12px' }}>
+                          style={{ background: '#A0522D', color: '#fff', fontSize: 14, padding: '5px 12px' }}>
                           內用 {order.table_id} 桌
                         </span>
                       )}
