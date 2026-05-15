@@ -137,11 +137,12 @@ function KitchenContent() {
     <div className="min-h-screen" style={{ background: '#C3B091', fontFamily: "'Noto Serif TC', serif" }}>
 
       {/* ── Header ── */}
-      <div className="sticky top-0 z-10 flex justify-between items-center px-4 py-3 border-b"
+      <div className="sticky top-0 z-10 flex justify-between items-center border-b"
         style={{
           background: '#A8926E',
           backdropFilter: 'blur(8px)',
           borderColor: '#8C7455',
+          padding: '12px 20px',
           paddingTop: 'calc(12px + env(safe-area-inset-top, 0px))',
         }}>
         <div className="flex items-center gap-3">
