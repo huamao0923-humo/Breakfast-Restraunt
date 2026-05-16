@@ -52,11 +52,28 @@ function KitchenContent() {
     }
   }, [])
 
+  // 已看過的訂單 ID — 用來判斷輪詢抓到的是不是新單
+  const seenIdsRef = useRef<Set<string>>(new Set())
+  const initialLoadDoneRef = useRef(false)
+
   useEffect(() => {
     const fetchOrders = () =>
       fetch('/api/orders?mode=kitchen')
         .then((res) => res.ok ? res.json() : Promise.reject(res))
-        .then((data: Order[]) => { setOrders(Array.isArray(data) ? data : []); setLoading(false) })
+        .then((data: Order[]) => {
+          const orders = Array.isArray(data) ? data : []
+
+          if (initialLoadDoneRef.current) {
+            // 找出沒看過的單 → 播一次叮咚（即使 SSE 漏接也會救回）
+            const hasNew = orders.some(o => !seenIdsRef.current.has(o.id))
+            if (hasNew) playDingDongRef.current()
+          }
+          orders.forEach(o => seenIdsRef.current.add(o.id))
+          initialLoadDoneRef.current = true
+
+          setOrders(orders)
+          setLoading(false)
+        })
         .catch(() => setLoading(false))
 
     fetchOrders()
@@ -68,6 +85,8 @@ function KitchenContent() {
       const order = JSON.parse(e.data) as Order
       order.items = Array.isArray(order.items) ? order.items
         : typeof order.items === 'string' ? JSON.parse(order.items) : []
+      if (seenIdsRef.current.has(order.id)) return  // 輪詢已處理過就略過
+      seenIdsRef.current.add(order.id)
       setOrders((prev) => [order, ...prev])
       playDingDongRef.current()
     })
