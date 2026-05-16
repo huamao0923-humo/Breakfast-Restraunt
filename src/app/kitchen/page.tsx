@@ -23,44 +23,29 @@ function KitchenContent() {
   const [cancelling, setCancelling] = useState(false)
   const [printingId, setPrintingId] = useState<string | null>(null)
   const printer = usePrinter()
-  const audioCtx = useRef<AudioContext | null>(null)
+  const audioElRef = useRef<HTMLAudioElement | null>(null)
   const playDingDongRef = useRef<() => void>(() => {})
 
   // 每次 render 更新 ref，確保 SSE listener 永遠拿到最新版本
   playDingDongRef.current = () => {
-    const ctx = audioCtx.current
-    if (!ctx) return
-    const doPlay = () => {
-      const play = (freq: number, start: number, duration: number) => {
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
-        osc.connect(gain)
-        gain.connect(ctx.destination)
-        osc.type = 'sine'
-        osc.frequency.setValueAtTime(freq, ctx.currentTime + start)
-        gain.gain.setValueAtTime(0.7, ctx.currentTime + start)
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration)
-        osc.start(ctx.currentTime + start)
-        osc.stop(ctx.currentTime + start + duration)
-      }
-      play(880, 0, 0.7)    // 叮
-      play(587, 0.4, 0.9)  // 咚
-    }
-    if (ctx.state === 'suspended') ctx.resume().then(doPlay)
-    else doPlay()
+    const el = audioElRef.current
+    if (!el) return
+    el.currentTime = 0
+    el.play().catch(() => {})
   }
 
-  // 建立 AudioContext（需在使用者互動後）
+  // 初始化音檔；瀏覽器需在使用者互動後才允許播放，所以第一次點擊時做一次靜音 play 解鎖
   useEffect(() => {
+    audioElRef.current = new Audio('/ding.mp3')
+    audioElRef.current.preload = 'auto'
+
     const unlock = () => {
-      if (!audioCtx.current) {
-        audioCtx.current = new AudioContext()
-      } else if (audioCtx.current.state === 'suspended') {
-        audioCtx.current.resume()
-      }
+      const el = audioElRef.current
+      if (!el) return
+      el.play().then(() => { el.pause(); el.currentTime = 0 }).catch(() => {})
     }
-    window.addEventListener('click', unlock, { once: false })
-    window.addEventListener('touchstart', unlock, { once: false })
+    window.addEventListener('click', unlock, { once: true })
+    window.addEventListener('touchstart', unlock, { once: true })
     return () => {
       window.removeEventListener('click', unlock)
       window.removeEventListener('touchstart', unlock)
