@@ -116,13 +116,27 @@ export function formatReceiptString(order: Order, storeName = '忠國豆漿店')
 
   // ── 訂單資訊────────────────────────────────
   push(ALIGN_LEFT, SIZE_TITLE)
+
+  // 解析線上自取的姓名
+  const isOnline = order.table_id === 'online'
+  const onlineFirstLine = isOnline && order.note?.startsWith('[線上自取]')
+    ? order.note.split('\n')[0].replace('[線上自取] ', '')
+    : null
+  const onlineName = onlineFirstLine ? onlineFirstLine.split('・')[0] : ''
+
   const label = order.table_id === 'takeout'
     ? `外帶 #${String(order.pickup_number ?? 0).padStart(3, '0')}`
-    : `${order.table_id} 桌`
+    : isOnline
+      ? `線上 ${onlineName}`
+      : `${order.table_id} 桌`
+  const pickupStr = isOnline
+    ? `#${String(order.pickup_number ?? 0).padStart(3, '0')}`
+    : null
   const time = new Date(order.created_at).toLocaleTimeString('zh-TW', {
-    hour: '2-digit', minute: '2-digit', hour12: false,
+    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Taipei',
   })
   push(BOLD_ON, label, BOLD_OFF, LF)
+  if (pickupStr) push(pickupStr, LF)
   push(`時間: ${time}`, LF)
   push(SIZE_NORMAL, divider(), LF)
 
@@ -139,10 +153,13 @@ export function formatReceiptString(order: Order, storeName = '忠國豆漿店')
   const totalStr = `$${order.total}`
   push(BOLD_ON, padEnd('合計', PAPER_WIDTH_TITLE - strWidth(totalStr)) + totalStr, BOLD_OFF, LF)
 
-  // ── 備註────────────────────────────────────
-  if (order.note) {
+  // ── 備註（線上自取過濾掉第一行姓名電話）──────
+  const rawNote = isOnline && order.note?.startsWith('[線上自取]')
+    ? order.note.split('\n').slice(1).join('\n').trim()
+    : order.note
+  if (rawNote) {
     push(SIZE_NORMAL, divider('.'), LF, SIZE_LARGE)
-    const noteLines = wrapText('備註: ' + order.note, PAPER_WIDTH)
+    const noteLines = wrapText('備註: ' + rawNote, PAPER_WIDTH)
     for (const line of noteLines) push(line, LF)
   }
 
