@@ -71,27 +71,28 @@ function itemBlock(
   qty: number,
   subtotal: number,
   options: { label: string }[],
+  width: number = PAPER_WIDTH,
 ): string[] {
   const right  = `x${qty}  $${subtotal}`
   const rightW = strWidth(right)
   const lines: string[] = []
 
-  if (strWidth(name) + rightW <= PAPER_WIDTH) {
-    lines.push(padEnd(name, PAPER_WIDTH - rightW) + right)
+  if (strWidth(name) + rightW <= width) {
+    lines.push(padEnd(name, width - rightW) + right)
   } else {
-    const nameLines = wrapText(name, PAPER_WIDTH)
+    const nameLines = wrapText(name, width)
     const lastIdx   = nameLines.length - 1
-    if (strWidth(nameLines[lastIdx]) + rightW <= PAPER_WIDTH) {
-      nameLines[lastIdx] = padEnd(nameLines[lastIdx], PAPER_WIDTH - rightW) + right
+    if (strWidth(nameLines[lastIdx]) + rightW <= width) {
+      nameLines[lastIdx] = padEnd(nameLines[lastIdx], width - rightW) + right
     } else {
-      nameLines.push(' '.repeat(PAPER_WIDTH - rightW) + right)
+      nameLines.push(' '.repeat(width - rightW) + right)
     }
     lines.push(...nameLines)
   }
 
   // 每項加料各自一行
   for (const opt of options) {
-    const optLines = wrapText(opt.label, PAPER_WIDTH - 2)
+    const optLines = wrapText(opt.label, width - 2)
     lines.push(...optLines.map(l => '  ' + l))
   }
 
@@ -108,13 +109,13 @@ export function formatReceiptString(order: Order, storeName = '忠國豆漿店')
   push(ALIGN_CENTER, SIZE_TITLE)
   push(BOLD_ON, storeName, BOLD_OFF, LF)
 
-  // ── 副標題（加高字）────────────────────────
-  push(SIZE_LARGE)
+  // ── 副標題────────────────────────────────
+  push(ALIGN_CENTER, SIZE_TITLE)
   push('現點現做，感謝您耐心等待', LF)
   push(SIZE_NORMAL, divider(), LF)
 
   // ── 訂單資訊────────────────────────────────
-  push(ALIGN_LEFT, SIZE_LARGE)
+  push(ALIGN_LEFT, SIZE_TITLE)
   const label = order.table_id === 'takeout'
     ? `外帶 #${String(order.pickup_number ?? 0).padStart(3, '0')}`
     : `${order.table_id} 桌`
@@ -126,17 +127,17 @@ export function formatReceiptString(order: Order, storeName = '忠國豆漿店')
   push(SIZE_NORMAL, divider(), LF)
 
   // ── 品項────────────────────────────────────
-  push(SIZE_LARGE)
+  push(SIZE_TITLE)
   for (const item of order.items) {
-    const block = itemBlock(item.name, item.qty, item.price * item.qty, item.options ?? [])
+    const block = itemBlock(item.name, item.qty, item.price * item.qty, item.options ?? [], PAPER_WIDTH_TITLE)
     for (const line of block) push(line, LF)
   }
   push(SIZE_NORMAL, divider(), LF)
 
   // ── 合計────────────────────────────────────
-  push(SIZE_LARGE)
+  push(SIZE_TITLE)
   const totalStr = `$${order.total}`
-  push(BOLD_ON, padEnd('合計', PAPER_WIDTH - strWidth(totalStr)) + totalStr, BOLD_OFF, LF)
+  push(BOLD_ON, padEnd('合計', PAPER_WIDTH_TITLE - strWidth(totalStr)) + totalStr, BOLD_OFF, LF)
 
   // ── 備註────────────────────────────────────
   if (order.note) {
