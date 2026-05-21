@@ -181,6 +181,21 @@ function MenuContent() {
   }, [])
 
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem('recentOrder')
+      if (!raw) return
+      const { receipt: saved, savedAt } = JSON.parse(raw)
+      if (Date.now() - savedAt > 4 * 60 * 60 * 1000) {
+        localStorage.removeItem('recentOrder')
+        return
+      }
+      setReceipt(saved)
+    } catch {
+      localStorage.removeItem('recentOrder')
+    }
+  }, [])
+
+  useEffect(() => {
     const es = new EventSource('/api/events?channel=menu-updates')
     es.addEventListener('sold-out-update', (e) => setSoldOut(JSON.parse(e.data).soldOut))
     return () => es.close()
@@ -240,16 +255,18 @@ function MenuContent() {
         unitPrice: i.price + i.options.reduce((s, o) => s + o.price_delta, 0),
         options: i.options.map(o => ({ label: o.label })),
       }))
-      clearCart()
-      setOrderNote('')
-      setShowCart(false)
-      setReceipt({
+      const receiptData: ReceiptData = {
         items: receiptItems,
         total,
         note: orderNote,
         pickupNumber: data.pickup_number ?? null,
         ...(table === 'online' ? { customerName, customerPhone } : {}),
-      })
+      }
+      clearCart()
+      setOrderNote('')
+      setShowCart(false)
+      setReceipt(receiptData)
+      localStorage.setItem('recentOrder', JSON.stringify({ receipt: receiptData, savedAt: Date.now() }))
     } catch (e) {
       console.error(e)
     } finally {
@@ -544,7 +561,7 @@ function MenuContent() {
             style={{ paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))', paddingTop: 12,
               borderTop: '1px solid #E5DDD0', background: '#F7F2EB' }}>
             <button
-              onClick={() => setReceipt(null)}
+              onClick={() => { localStorage.removeItem('recentOrder'); setReceipt(null) }}
               className="w-full rounded-2xl py-4 text-base font-bold tracking-[3px] transition-all active:scale-[0.98]"
               style={{ background: C.primary, color: '#fff', boxShadow: '0 4px 16px rgba(217,119,6,0.3)' }}>
               完成，繼續點餐
