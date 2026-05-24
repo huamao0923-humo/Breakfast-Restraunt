@@ -54,7 +54,24 @@ function KitchenContent() {
 
   // 已看過的訂單 ID — 用來判斷輪詢抓到的是不是新單
   const seenIdsRef = useRef<Set<string>>(new Set())
+  // 本次 session 已嘗試自動列印過的訂單 — 避免每次 polling 重複丟進佇列
+  const autoPrintTriedRef = useRef<Set<string>>(new Set())
   const initialLoadDoneRef = useRef(false)
+
+  // ref 形式持有 enqueue / removeFromQueue，避免每次 render 重啟 SSE/polling effect
+  const enqueueRef = useRef(printer.enqueue)
+  const removeFromQueueRef = useRef(printer.removeFromQueue)
+  enqueueRef.current = printer.enqueue
+  removeFromQueueRef.current = printer.removeFromQueue
+
+  // 嘗試把訂單丟進自動列印佇列（已印過、不是 pending 或已嘗試過都跳過）
+  const tryAutoPrint = (order: Order) => {
+    if (order.printed_at != null) return
+    if (order.status !== 'pending') return
+    if (autoPrintTriedRef.current.has(order.id)) return
+    autoPrintTriedRef.current.add(order.id)
+    enqueueRef.current(order)
+  }
 
   useEffect(() => {
     const fetchOrders = () =>
@@ -69,6 +86,8 @@ function KitchenContent() {
             if (hasNew) playDingDongRef.current()
           }
           orders.forEach(o => seenIdsRef.current.add(o.id))
+          // 不論初次載入或輪詢補抓，都嘗試自動列印未印的單
+          orders.forEach(tryAutoPrint)
           initialLoadDoneRef.current = true
 
           setOrders(orders)
@@ -89,16 +108,20 @@ function KitchenContent() {
       seenIdsRef.current.add(order.id)
       setOrders((prev) => [order, ...prev])
       playDingDongRef.current()
+      tryAutoPrint(order)
     })
 
     es.addEventListener('order-updated', (e) => {
       const updated = JSON.parse(e.data) as Order
       updated.items = Array.isArray(updated.items) ? updated.items
         : typeof updated.items === 'string' ? JSON.parse(updated.items) : []
+      // 被取消的單 → 從佇列移除
+      if (updated.status === 'cancelled') removeFromQueueRef.current(updated.id)
       setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
     })
 
     return () => { es.close(); clearInterval(poll) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const markDone = async (id: string) => {
@@ -128,6 +151,7 @@ function KitchenContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'cancelled' }),
       })
+      printer.removeFromQueue(id)
       setOrders((prev) => prev.map((o) => o.id === id ? { ...o, status: 'cancelled' } : o))
     } finally {
       setCancelling(false)
@@ -166,6 +190,12 @@ function KitchenContent() {
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
               style={{ background: '#D2B48C', color: '#3D2010' }}>
               {activeOrders.length} 筆
+            </span>
+          )}
+          {printer.queueLength > 0 && (
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background: '#F87171', color: '#fff' }}>
+              待印 {printer.queueLength}
             </span>
           )}
         </div>
