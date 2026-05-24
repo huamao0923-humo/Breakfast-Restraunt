@@ -26,5 +26,8 @@ export async function register() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `
+
+    // 自動列印用：紀錄訂單被列印的時間，原子佔位避免重複列印
+    await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS printed_at TIMESTAMPTZ`
   }
 }
