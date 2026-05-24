@@ -112,8 +112,8 @@ function CartRow({ item, idx, onMinus, onPlus, onEdit, hasOpts }: {
             {hasOpts && onEdit && (
               <button
                 onClick={onEdit}
-                className="text-xs px-3 py-1 rounded-full transition active:scale-95 shrink-0"
-                style={{ background: '#FEF3C7', color: C.primaryD, border: `1px solid #FCD34D` }}>
+                className="text-sm font-medium rounded-full transition active:scale-95 shrink-0"
+                style={{ background: '#FEF3C7', color: C.primaryD, border: `1px solid #FCD34D`, padding: '6px 16px' }}>
                 編輯
               </button>
             )}
@@ -395,7 +395,7 @@ function MenuContent() {
               <div className="w-10 h-1 rounded-full bg-gray-200" />
             </div>
             {/* 標題 */}
-            <div className="px-6 pb-3 flex justify-between items-center shrink-0">
+            <div className="flex justify-between items-center shrink-0" style={{ padding: '0 28px 12px' }}>
               <h2 className="text-xl font-bold" style={{ color: C.text }}>確認訂單</h2>
               <span className="text-sm px-3 py-1 rounded-full font-medium"
                 style={{ background: C.pill, color: C.sub }}>
@@ -403,7 +403,7 @@ function MenuContent() {
               </span>
             </div>
             {/* 品項列表 */}
-            <div className="flex-1 overflow-y-auto px-6 space-y-3 pb-2">
+            <div className="flex-1 overflow-y-auto space-y-3" style={{ padding: '0 28px 8px' }}>
               {items.map((item, idx) => {
                 const menuItem = menuData.flatMap(c => c.items).find(m => m.id === item.id)
                 const hasOpts = (menuItem?.options?.length ?? 0) > 0
@@ -421,8 +421,8 @@ function MenuContent() {
                 )
               })}
             </div>
-            <div className="shrink-0 border-t p-4 space-y-3"
-              style={{ borderColor: C.border, paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
+            <div className="shrink-0 border-t space-y-3"
+              style={{ borderColor: C.border, padding: '16px 28px', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
               <input
                 type="text"
                 value={orderNote}
