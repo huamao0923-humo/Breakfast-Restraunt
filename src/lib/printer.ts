@@ -135,12 +135,12 @@ export function formatReceiptString(order: Order, storeName = '忠國豆漿店')
   push(BOLD_ON, storeName, BOLD_OFF, LF)
 
   // ── 副標題────────────────────────────────
-  push(ALIGN_CENTER, SIZE_LARGE)
+  push(ALIGN_CENTER, SIZE_TITLE)
   push('現點現做，感謝您耐心等待', LF)
   push(SIZE_NORMAL, divider(), LF)
 
   // ── 訂單資訊────────────────────────────────
-  push(ALIGN_LEFT, SIZE_LARGE)
+  push(ALIGN_LEFT, SIZE_TITLE)
 
   // 解析線上自取的姓名
   const isOnline = order.table_id === 'online'
@@ -166,17 +166,17 @@ export function formatReceiptString(order: Order, storeName = '忠國豆漿店')
   push(SIZE_NORMAL, divider(), LF)
 
   // ── 品項────────────────────────────────────
-  push(SIZE_LARGE)
+  push(SIZE_TITLE)
   for (const item of order.items) {
-    const block = itemBlock(item.name, item.qty, item.price * item.qty, item.options ?? [], PAPER_WIDTH)
+    const block = itemBlock(item.name, item.qty, item.price * item.qty, item.options ?? [], PAPER_WIDTH_TITLE)
     for (const line of block) push(line, LF)
   }
   push(SIZE_NORMAL, divider(), LF)
 
   // ── 合計────────────────────────────────────
-  push(SIZE_LARGE)
+  push(SIZE_TITLE)
   const totalStr = `$${order.total}`
-  push(BOLD_ON, padEnd('合計', PAPER_WIDTH - strWidth(totalStr)) + totalStr, BOLD_OFF, LF)
+  push(BOLD_ON, padEnd('合計', PAPER_WIDTH_TITLE - strWidth(totalStr)) + totalStr, BOLD_OFF, LF)
 
   // ── 備註（線上自取過濾掉第一行姓名電話）──────
   const rawNote = isOnline && order.note?.startsWith('[線上自取]')
@@ -190,7 +190,7 @@ export function formatReceiptString(order: Order, storeName = '忠國豆漿店')
 
   // ── 掃碼點餐 QR ────────────────────────────
   push(SIZE_NORMAL, LF, divider(), LF)
-  push(ALIGN_CENTER, SIZE_LARGE, BOLD_ON, '歡迎掃碼點餐', BOLD_OFF, LF)
+  push(ALIGN_CENTER, SIZE_TITLE, BOLD_ON, '歡迎掃碼點餐', BOLD_OFF, LF)
   push(SIZE_NORMAL, LF)
   push(qrCode(ORDER_URL), LF)
 
