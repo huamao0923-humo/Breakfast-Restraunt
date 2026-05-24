@@ -456,6 +456,8 @@ function MenuContent() {
           item={showOptions}
           onAdd={handleAddItem}
           onClose={() => { setShowOptions(null); setEditingCartIdx(null) }}
+          initialOptions={editingCartIdx !== null ? items[editingCartIdx]?.options : undefined}
+          initialQty={editingCartIdx !== null ? items[editingCartIdx]?.qty : undefined}
         />
       )}
 

@@ -7,6 +7,8 @@ interface OptionSheetProps {
   item: MenuItem
   onAdd: (options: CartItemOption[], qty: number) => void
   onClose: () => void
+  initialOptions?: CartItemOption[]
+  initialQty?: number
 }
 
 const C = {
@@ -22,7 +24,7 @@ const C = {
 // 虛擬 ID 代表「大杯（原價）」
 const LARGE_ID = '__large__'
 
-export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
+export function OptionSheet({ item, onAdd, onClose, initialOptions, initialQty }: OptionSheetProps) {
   // 拆分規格選項（含「杯」字）、溫度選項（id 以 temp_ 開頭）、必選群組（id 以 req_ 開頭）與一般客製選項
   const sizeOptions    = item.options.filter(o => o.label.includes('杯'))
   const tempOptions    = item.options.filter(o => o.id.startsWith('temp_'))
@@ -32,16 +34,38 @@ export function OptionSheet({ item, onAdd, onClose }: OptionSheetProps) {
   const hasTempOpts    = tempOptions.length > 0
   const hasReqOpts     = reqOptions.length > 0
 
-  // 規格：單選，必選（無預設）
-  const [selectedSizeId, setSelectedSizeId] = useState<string | null>(null)
-  // 溫度：單選，必選（無預設）
-  const [selectedTempId, setSelectedTempId] = useState<string | null>(null)
-  // 必選群組：單選，必選（無預設，以 index 追蹤）
-  const [selectedReqIdx, setSelectedReqIdx] = useState<number | null>(null)
-  // 一般客製：多選（以 index 追蹤，避免 DB 中重複 id 互相干擾）
-  const [selected, setSelected] = useState<number[]>([])
+  // 從 initialOptions 推算各群組的預設值（編輯模式才會有）
+  const initSizeId = (() => {
+    if (!initialOptions || !hasSizeOpts) return null
+    const found = initialOptions.find(o => o.label.includes('杯'))
+    return found ? found.id : LARGE_ID  // 沒有杯選項代表原本選大杯
+  })()
+  const initTempId = initialOptions
+    ? initialOptions.find(o => o.id.startsWith('temp_'))?.id ?? null
+    : null
+  const initReqIdx = (() => {
+    if (!initialOptions || !hasReqOpts) return null
+    const req = initialOptions.find(o => o.id.startsWith('req_'))
+    if (!req) return null
+    const idx = reqOptions.findIndex(o => o.id === req.id && o.label === req.label)
+    return idx >= 0 ? idx : null
+  })()
+  const initSelected = initialOptions
+    ? regularOptions
+        .map((opt, idx) => initialOptions.some(io => io.id === opt.id && io.label === opt.label) ? idx : -1)
+        .filter(idx => idx >= 0)
+    : []
+
+  // 規格：單選，必選（編輯時帶入原值）
+  const [selectedSizeId, setSelectedSizeId] = useState<string | null>(initSizeId)
+  // 溫度：單選，必選（編輯時帶入原值）
+  const [selectedTempId, setSelectedTempId] = useState<string | null>(initTempId)
+  // 必選群組：單選，必選（編輯時帶入原值）
+  const [selectedReqIdx, setSelectedReqIdx] = useState<number | null>(initReqIdx)
+  // 一般客製：多選（以 index 追蹤，避免 DB 中重複 id 互相干擾；編輯時帶入原選）
+  const [selected, setSelected] = useState<number[]>(initSelected)
   // 數量
-  const [qty, setQty] = useState(1)
+  const [qty, setQty] = useState(initialQty ?? 1)
 
   if (item.options.length === 0) return null
 
