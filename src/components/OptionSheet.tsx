@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { MenuItem, CartItemOption } from '@/types'
 
 interface OptionSheetProps {
@@ -69,8 +69,22 @@ export function OptionSheet({ item, onAdd, onClose, initialOptions, initialQty }
 
   if (item.options.length === 0) return null
 
-  const toggleRegular = (idx: number) =>
+  // 「冰豆漿不可半糖」規則
+  const isIceSoymilk = item.name.includes('豆漿') && selectedTempId === 'temp_ice'
+  const isOptionDisabled = (opt: { label: string }) =>
+    isIceSoymilk && opt.label.includes('半糖')
+
+  // 切到冰豆漿時自動取消已選的半糖
+  useEffect(() => {
+    if (!isIceSoymilk) return
+    setSelected(prev => prev.filter(idx => !regularOptions[idx]?.label.includes('半糖')))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTempId, item.id])
+
+  const toggleRegular = (idx: number) => {
+    if (isOptionDisabled(regularOptions[idx])) return
     setSelected(prev => prev.includes(idx) ? prev.filter(x => x !== idx) : [...prev, idx])
+  }
 
   const canAdd = (hasSizeOpts
     ? (selectedSizeId !== null && (!hasTempOpts || selectedTempId !== null))
@@ -138,19 +152,27 @@ export function OptionSheet({ item, onAdd, onClose, initialOptions, initialQty }
 
   // ── 一般 Checkbox 列 ───────────────────────────────────
   const CheckRow = ({
-    id, label, priceDelta, checked, onToggle,
-  }: { id: string; label: string; priceDelta: number; checked: boolean; onToggle: () => void }) => (
+    id, label, priceDelta, checked, onToggle, disabled, disabledHint,
+  }: { id: string; label: string; priceDelta: number; checked: boolean; onToggle: () => void; disabled?: boolean; disabledHint?: string }) => (
     <button
-      onClick={onToggle}
+      onClick={disabled ? undefined : onToggle}
+      disabled={disabled}
       className="w-full flex items-center justify-between rounded-2xl transition-all active:scale-[0.98]"
       style={{
         minHeight: 56,
         padding: '0 16px',
         background: checked ? '#FEF3C7' : C.pill,
         border: `2px solid ${checked ? C.primary : 'transparent'}`,
+        opacity: disabled ? 0.4 : 1,
+        cursor: disabled ? 'not-allowed' : 'pointer',
       }}
     >
-      <span className="text-base font-semibold" style={{ color: C.text }}>{label}</span>
+      <span className="text-base font-semibold flex items-center gap-2" style={{ color: C.text }}>
+        {label}
+        {disabled && disabledHint && (
+          <span className="text-xs font-normal" style={{ color: C.sub }}>{disabledHint}</span>
+        )}
+      </span>
       <div className="flex items-center gap-3 shrink-0">
         {priceDelta !== 0 && (
           <span className="text-sm font-medium" style={{ color: C.sub }}>
@@ -303,16 +325,21 @@ export function OptionSheet({ item, onAdd, onClose, initialOptions, initialQty }
                 客製選項
               </p>
               <div className="space-y-2">
-                {regularOptions.map((opt, idx) => (
-                  <CheckRow
-                    key={idx}
-                    id={opt.id}
-                    label={opt.label}
-                    priceDelta={opt.price_delta}
-                    checked={selected.includes(idx)}
-                    onToggle={() => toggleRegular(idx)}
-                  />
-                ))}
+                {regularOptions.map((opt, idx) => {
+                  const disabled = isOptionDisabled(opt)
+                  return (
+                    <CheckRow
+                      key={idx}
+                      id={opt.id}
+                      label={opt.label}
+                      priceDelta={opt.price_delta}
+                      checked={selected.includes(idx)}
+                      onToggle={() => toggleRegular(idx)}
+                      disabled={disabled}
+                      disabledHint={disabled ? '冰豆漿不可半糖' : undefined}
+                    />
+                  )
+                })}
               </div>
             </div>
           )}
