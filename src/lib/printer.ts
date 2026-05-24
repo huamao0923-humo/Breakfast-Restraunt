@@ -22,6 +22,31 @@ const SIZE_TITLE    = GS + '!\x11'  // 標題：加寬加高（行容量縮為 1
 const PAPER_WIDTH       = 32  // 標準 / 加高模式下的行寬
 const PAPER_WIDTH_TITLE = 16  // 加寬加高模式下的行寬
 
+// 點餐 QR Code 連結
+const ORDER_URL = 'https://breakfast-restraunt-production.up.railway.app/order'
+
+/**
+ * ESC/POS QR Code 指令（GS ( k 系列）
+ * 1) 選 Model 2  2) 設定模組大小 3) 設定錯誤修正 4) 寫入資料 5) 列印
+ */
+function qrCode(data: string, moduleSize = 7): string {
+  const cmds: string[] = []
+  // Model 2
+  cmds.push(GS + '(k\x04\x00\x31\x41\x32\x00')
+  // 模組大小（1-16，數字越大 QR 越大）
+  cmds.push(GS + '(k\x03\x00\x31\x43' + String.fromCharCode(moduleSize))
+  // 錯誤修正等級 M（0x31）— L=0x30, M=0x31, Q=0x32, H=0x33
+  cmds.push(GS + '(k\x03\x00\x31\x45\x31')
+  // 寫入資料（pL/pH = data.length + 3）
+  const len = data.length + 3
+  const pL  = String.fromCharCode(len & 0xff)
+  const pH  = String.fromCharCode((len >> 8) & 0xff)
+  cmds.push(GS + '(k' + pL + pH + '\x31\x50\x30' + data)
+  // 列印
+  cmds.push(GS + '(k\x03\x00\x31\x51\x30')
+  return cmds.join('')
+}
+
 function strWidth(s: string): number {
   let w = 0
   for (const c of s) w += c.charCodeAt(0) > 0x7f ? 2 : 1
@@ -163,8 +188,14 @@ export function formatReceiptString(order: Order, storeName = '忠國豆漿店')
     for (const line of noteLines) push(line, LF)
   }
 
+  // ── 掃碼點餐 QR ────────────────────────────
+  push(SIZE_NORMAL, LF, divider(), LF)
+  push(ALIGN_CENTER, SIZE_TITLE, BOLD_ON, '歡迎掃碼點餐', BOLD_OFF, LF)
+  push(SIZE_NORMAL, LF)
+  push(qrCode(ORDER_URL), LF)
+
   // ── 頁尾────────────────────────────────────
-  push(SIZE_NORMAL, LF, ALIGN_CENTER)
+  push(SIZE_NORMAL, divider(), LF, ALIGN_CENTER)
   push('謝謝光臨', LF)
   push('[System by 華宇資訊]', LF)
   push(LF, LF, CUT)
