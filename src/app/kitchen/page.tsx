@@ -211,27 +211,21 @@ function KitchenContent() {
               style={{ background: '#6EE7B7', animation: 'pulse 2s infinite' }} />
             <span className="text-xs tracking-wide" style={{ color: '#3D2010' }}>即時同步中</span>
           </div>
-          {(() => {
-            const cannotOpen = !shop.isOpen && printer.status !== 'connected'
-            return (
-              <button
-                onClick={() => { if (!cannotOpen && !shop.saving) shop.toggle() }}
-                disabled={cannotOpen || shop.saving}
-                title={cannotOpen ? '請先連接印表機' : ''}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  background: shop.isOpen ? '#16A34A' : (cannotOpen ? '#D1D5DB' : '#F3F4F6'),
-                  color: shop.isOpen ? '#fff' : '#3D2010',
-                  border: 'none', borderRadius: 20,
-                  padding: '5px 12px',
-                  cursor: cannotOpen || shop.saving ? 'not-allowed' : 'pointer',
-                  fontWeight: 'bold', fontSize: 12,
-                  opacity: shop.saving ? 0.6 : 1,
-                }}>
-                {shop.isOpen ? '暫停營業' : '開始營業'}
-              </button>
-            )
-          })()}
+          <button
+            onClick={() => { if (!shop.saving) shop.toggle() }}
+            disabled={shop.saving}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              background: shop.isOpen ? '#16A34A' : '#F3F4F6',
+              color: shop.isOpen ? '#fff' : '#3D2010',
+              border: 'none', borderRadius: 20,
+              padding: '5px 12px',
+              cursor: shop.saving ? 'wait' : 'pointer',
+              fontWeight: 'bold', fontSize: 12,
+              opacity: shop.saving ? 0.6 : 1,
+            }}>
+            {shop.isOpen ? '暫停營業' : '開始營業'}
+          </button>
           <button
             onClick={printer.status === 'connected' ? printer.disconnect : printer.connect}
             style={{
