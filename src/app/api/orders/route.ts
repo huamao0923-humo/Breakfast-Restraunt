@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import sql from '@/lib/db'
 import { emit } from '@/lib/events'
 import { getTodayRange } from '@/lib/utils'
+import { getCurrentShopSettings } from '@/lib/shop'
 import type { OrderItem } from '@/types'
 
 function parseOrder(row: any) {
@@ -22,6 +23,12 @@ export async function POST(request: NextRequest) {
 
     if (!table_id || !items || total === undefined) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    // 營業狀態閘門（含 lazy auto-close）
+    const settings = await getCurrentShopSettings()
+    if (!settings.is_open) {
+      return NextResponse.json({ error: 'shop_closed', message: settings.closed_message }, { status: 403 })
     }
 
     let pickup_number: number | null = null

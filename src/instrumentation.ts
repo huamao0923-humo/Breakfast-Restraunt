@@ -29,5 +29,22 @@ export async function register() {
 
     // 自動列印用：紀錄訂單被列印的時間，原子佔位避免重複列印
     await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS printed_at TIMESTAMPTZ`
+
+    // 營業狀態 singleton row（id='current'）
+    await sql`
+      CREATE TABLE IF NOT EXISTS shop_settings (
+        id TEXT PRIMARY KEY DEFAULT 'current',
+        is_open BOOLEAN NOT NULL DEFAULT false,
+        closed_message TEXT NOT NULL DEFAULT '目前未營業，請稍後再試',
+        auto_close_time TEXT,
+        auto_closed_on DATE,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `
+    await sql`
+      INSERT INTO shop_settings (id, is_open)
+      VALUES ('current', false)
+      ON CONFLICT (id) DO NOTHING
+    `
   }
 }

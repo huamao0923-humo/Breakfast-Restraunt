@@ -4,6 +4,7 @@
 import { useEffect, useState, useRef, Suspense } from 'react'
 import type { Order } from '@/types'
 import { usePrinter } from '@/hooks/usePrinter'
+import { useShopStatus } from '@/hooks/useShopStatus'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,6 +24,7 @@ function KitchenContent() {
   const [cancelling, setCancelling] = useState(false)
   const [printingId, setPrintingId] = useState<string | null>(null)
   const printer = usePrinter()
+  const shop    = useShopStatus()
   const audioElRef = useRef<HTMLAudioElement | null>(null)
   const playDingDongRef = useRef<() => void>(() => {})
 
@@ -198,6 +200,10 @@ function KitchenContent() {
               待印 {printer.queueLength}
             </span>
           )}
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+            style={{ background: shop.isOpen ? '#22C55E' : '#9CA3AF', color: '#fff' }}>
+            {shop.isOpen ? '營業中' : '休息中'}
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
@@ -205,6 +211,27 @@ function KitchenContent() {
               style={{ background: '#6EE7B7', animation: 'pulse 2s infinite' }} />
             <span className="text-xs tracking-wide" style={{ color: '#3D2010' }}>即時同步中</span>
           </div>
+          {(() => {
+            const cannotOpen = !shop.isOpen && printer.status !== 'connected'
+            return (
+              <button
+                onClick={() => { if (!cannotOpen && !shop.saving) shop.toggle() }}
+                disabled={cannotOpen || shop.saving}
+                title={cannotOpen ? '請先連接印表機' : ''}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  background: shop.isOpen ? '#16A34A' : (cannotOpen ? '#D1D5DB' : '#F3F4F6'),
+                  color: shop.isOpen ? '#fff' : '#3D2010',
+                  border: 'none', borderRadius: 20,
+                  padding: '5px 12px',
+                  cursor: cannotOpen || shop.saving ? 'not-allowed' : 'pointer',
+                  fontWeight: 'bold', fontSize: 12,
+                  opacity: shop.saving ? 0.6 : 1,
+                }}>
+                {shop.isOpen ? '暫停營業' : '開始營業'}
+              </button>
+            )
+          })()}
           <button
             onClick={printer.status === 'connected' ? printer.disconnect : printer.connect}
             style={{

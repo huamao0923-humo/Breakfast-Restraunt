@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useShopStatus } from '@/hooks/useShopStatus'
+import { ShopClosedOverlay } from '@/components/ShopClosedOverlay'
 
 const TABLES = [1, 2, 3, 4, 5]
 
@@ -9,10 +11,24 @@ type Step = 'choose' | 'table' | 'online'
 
 export default function OrderLandingPage() {
   const router = useRouter()
+  const shop   = useShopStatus()
   const [step, setStep] = useState<Step>('choose')
   const [customerName, setCustomerName]   = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [errors, setErrors] = useState<{ name?: string; phone?: string }>({})
+
+  if (shop.loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen"
+        style={{ background: '#F7F4F0', color: '#9C7A5A', fontFamily: "'Noto Serif TC', serif", fontSize: 16 }}>
+        載入中…
+      </div>
+    )
+  }
+
+  if (!shop.isOpen) {
+    return <ShopClosedOverlay message={shop.closedMessage} />
+  }
 
   const goTakeout = () => router.push('/menu?table=takeout')
   const goDineIn  = () => setStep('table')

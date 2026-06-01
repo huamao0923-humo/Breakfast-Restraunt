@@ -5,6 +5,8 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useCart } from '@/hooks/useCart'
 import { OptionSheet } from '@/components/OptionSheet'
+import { ShopClosedOverlay } from '@/components/ShopClosedOverlay'
+import { useShopStatus } from '@/hooks/useShopStatus'
 import type { MenuItem, CartItemOption, MenuCategory } from '@/types'
 
 export const dynamic = 'force-dynamic'
@@ -154,6 +156,7 @@ function MenuContent() {
   const table        = searchParams.get('table') || 'A1'
   const customerName  = searchParams.get('customer_name') || ''
   const customerPhone = searchParams.get('customer_phone') || ''
+  const shop          = useShopStatus()
 
   const [menuData, setMenuData]       = useState<MenuCategory[]>([])
   const [menuLoading, setMenuLoading] = useState(true)
@@ -226,6 +229,10 @@ function MenuContent() {
 
   const handleSubmitOrder = async () => {
     if (!items.length) return
+    if (!shop.isOpen) {
+      alert(shop.closedMessage || '店家暫停營業中')
+      return
+    }
     setSubmitting(true)
     try {
       const formattedItems = items.map(i => ({
@@ -246,6 +253,11 @@ function MenuContent() {
           ...(table === 'online' ? { customer_phone: customerPhone } : {}),
         }),
       })
+      if (res.status === 403) {
+        const err = await res.json().catch(() => ({}))
+        alert(err.message || '店家已暫停營業，無法送出訂單')
+        return
+      }
       if (!res.ok) return
       const data = await res.json()
 
@@ -277,11 +289,16 @@ function MenuContent() {
   const activeCat = menuData.find(c => c.category === activeCategory)
   const totalQty  = items.reduce((s, i) => s + i.qty, 0)
 
-  if (menuLoading) {
+  if (menuLoading || shop.loading) {
     return (
       <div className="flex items-center justify-center h-screen text-base font-sans"
         style={{ background: C.bg, color: C.muted }}>載入中…</div>
     )
+  }
+
+  // 店家未營業 → 全螢幕未營業訊息（即使客人已開著 menu，SSE 推送會即時切換）
+  if (!shop.isOpen) {
+    return <ShopClosedOverlay message={shop.closedMessage} />
   }
 
   // ── 共用品項資訊計算 ───────────────────────────────────
