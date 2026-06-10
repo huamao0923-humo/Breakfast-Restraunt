@@ -46,5 +46,29 @@ export async function register() {
       VALUES ('current', false)
       ON CONFLICT (id) DO NOTHING
     `
+
+    // 自動開店 / 每週公休 / 特定休假日 欄位
+    await sql`ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS auto_opened_on DATE`
+    await sql`ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS off_weekdays JSONB NOT NULL DEFAULT '[1,2]'::jsonb`
+    await sql`ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS holidays JSONB NOT NULL DEFAULT '[]'::jsonb`
+
+    // auto_open_time：首次新增時帶入預設 05:30（之後使用者可在後台改）
+    const col = await sql`
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'shop_settings' AND column_name = 'auto_open_time'
+    `
+    if (col.length === 0) {
+      await sql`ALTER TABLE shop_settings ADD COLUMN auto_open_time TEXT`
+      await sql`UPDATE shop_settings SET auto_open_time = '05:30' WHERE id = 'current'`
+    }
+
+    // 伺服器端排程器：每分鐘檢查自動開 / 關店（廚房平板不一定開著也能準時生效）
+    const g = globalThis as unknown as { __shopScheduler?: ReturnType<typeof setInterval> }
+    if (!g.__shopScheduler) {
+      const { getCurrentShopSettings } = await import('./lib/shop')
+      const tick = () => { getCurrentShopSettings().catch((e) => console.error('shop scheduler error:', e)) }
+      g.__shopScheduler = setInterval(tick, 60_000)
+      tick()  // 啟動時先跑一次
+    }
   }
 }

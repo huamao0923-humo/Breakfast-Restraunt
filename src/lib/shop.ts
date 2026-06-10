@@ -4,8 +4,33 @@ import { emit } from '@/lib/events'
 export interface ShopSettings {
   is_open: boolean
   closed_message: string
-  auto_close_time: string | null   // 'HH:MM'
-  auto_closed_on: string | null    // 'YYYY-MM-DD'
+  auto_open_time: string | null     // 'HH:MM' or null = 停用自動開店
+  auto_close_time: string | null    // 'HH:MM' or null = 停用自動關店
+  auto_opened_on: string | null     // 'YYYY-MM-DD'：今天已自動/手動開過的日期
+  auto_closed_on: string | null     // 'YYYY-MM-DD'：今天已自動/手動關過的日期
+  off_weekdays: number[]            // 每週固定公休（0=日 .. 6=六）
+  holidays: string[]                // 一次性休假日期 ['YYYY-MM-DD']
+}
+
+// 回傳欄位（含 JSONB 與日期格式化），多處共用
+function returnCols() {
+  return sql`
+    is_open, closed_message, auto_open_time, auto_close_time,
+    to_char(auto_opened_on, 'YYYY-MM-DD') AS auto_opened_on,
+    to_char(auto_closed_on, 'YYYY-MM-DD') AS auto_closed_on,
+    off_weekdays, holidays
+  `
+}
+
+const FALLBACK: ShopSettings = {
+  is_open: false,
+  closed_message: '目前未營業，請稍後再試',
+  auto_open_time: '05:30',
+  auto_close_time: null,
+  auto_opened_on: null,
+  auto_closed_on: null,
+  off_weekdays: [1, 2],
+  holidays: [],
 }
 
 function nowTaipei() {
@@ -17,71 +42,103 @@ function nowTaipei() {
   const parts = Object.fromEntries(
     formatter.formatToParts(new Date()).map(p => [p.type, p.value])
   )
-  return {
-    date: `${parts.year}-${parts.month}-${parts.day}`,   // 'YYYY-MM-DD'
-    time: `${parts.hour}:${parts.minute}`,               // 'HH:MM'
-  }
+  const date = `${parts.year}-${parts.month}-${parts.day}`   // 'YYYY-MM-DD'
+  const time = `${parts.hour}:${parts.minute}`               // 'HH:MM'
+  const weekday = new Date(`${date}T00:00:00Z`).getUTCDay()  // 0=日 .. 6=六
+  return { date, time, weekday }
+}
+
+function broadcast(s: ShopSettings) {
+  emit('menu-updates', 'shop-settings-changed', s)
+  emit('kitchen', 'shop-settings-changed', s)
 }
 
 /**
- * 讀取目前店況。同時做 lazy auto-close：
- *  - 若已超過 auto_close_time 且今天還沒被自動關過 → 原子更新關門並廣播 SSE。
- * 所有需要判斷 is_open 的地方都應該呼叫這個 helper（包括 API GET、orders POST）。
+ * 讀取目前店況，並 lazy / scheduler 觸發自動開關店：
+ *  1. 公休日（每週固定 or 特定日期）+ 仍開著 + 非今天手動開 → 強制關店
+ *  2. 非公休日 + 已關 + 到了開店時間 + 今天還沒開過 + 還沒到關店時間 → 自動開店
+ *  3. 開著 + 到了關店時間 + 今天還沒關過 → 自動關店
+ * 由 API GET、orders POST、與伺服器端每分鐘排程器共同呼叫。
  */
 export async function getCurrentShopSettings(): Promise<ShopSettings> {
   const [row] = await sql<ShopSettings[]>`
-    SELECT is_open, closed_message, auto_close_time,
-           to_char(auto_closed_on, 'YYYY-MM-DD') AS auto_closed_on
-    FROM shop_settings WHERE id = 'current'
+    SELECT ${returnCols()} FROM shop_settings WHERE id = 'current'
   `
-  if (!row) {
-    // 萬一 instrumentation 沒跑到（理論不會），返回安全預設
-    return { is_open: false, closed_message: '目前未營業，請稍後再試', auto_close_time: null, auto_closed_on: null }
+  if (!row) return FALLBACK
+
+  const { date, time, weekday } = nowTaipei()
+  const offWeekdays = Array.isArray(row.off_weekdays) ? row.off_weekdays : []
+  const holidays    = Array.isArray(row.holidays) ? row.holidays : []
+  const isDayOff    = offWeekdays.includes(weekday) || holidays.includes(date)
+
+  // 1. 公休日強制關店（除非今天是手動開的）
+  if (isDayOff && row.is_open && row.auto_opened_on !== date) {
+    const [updated] = await sql<ShopSettings[]>`
+      UPDATE shop_settings
+      SET is_open = false, auto_closed_on = ${date}::date, updated_at = NOW()
+      WHERE id = 'current' AND is_open = true
+        AND (auto_opened_on IS NULL OR auto_opened_on <> ${date}::date)
+      RETURNING ${returnCols()}
+    `
+    if (updated) { broadcast(updated); return updated }
+    return row
   }
 
-  if (row.is_open && row.auto_close_time) {
-    const { date, time } = nowTaipei()
-    const pastClose = time >= row.auto_close_time
-    const notClosedToday = row.auto_closed_on !== date
-    if (pastClose && notClosedToday) {
-      const [updated] = await sql<ShopSettings[]>`
-        UPDATE shop_settings
-        SET is_open = false,
-            auto_closed_on = ${date}::date,
-            updated_at = NOW()
-        WHERE id = 'current' AND is_open = true
-          AND (auto_closed_on IS NULL OR auto_closed_on <> ${date}::date)
-        RETURNING is_open, closed_message, auto_close_time,
-                  to_char(auto_closed_on, 'YYYY-MM-DD') AS auto_closed_on
-      `
-      if (updated) {
-        emit('menu-updates', 'shop-settings-changed', updated)
-        emit('kitchen', 'shop-settings-changed', updated)
-        return updated
-      }
-    }
+  // 2. 自動開店
+  if (!isDayOff && !row.is_open && row.auto_open_time
+      && time >= row.auto_open_time
+      && row.auto_opened_on !== date
+      && (!row.auto_close_time || time < row.auto_close_time)) {
+    const [updated] = await sql<ShopSettings[]>`
+      UPDATE shop_settings
+      SET is_open = true, auto_opened_on = ${date}::date, updated_at = NOW()
+      WHERE id = 'current' AND is_open = false
+        AND (auto_opened_on IS NULL OR auto_opened_on <> ${date}::date)
+      RETURNING ${returnCols()}
+    `
+    if (updated) { broadcast(updated); return updated }
+    return row
   }
+
+  // 3. 自動關店
+  if (row.is_open && row.auto_close_time
+      && time >= row.auto_close_time
+      && row.auto_closed_on !== date) {
+    const [updated] = await sql<ShopSettings[]>`
+      UPDATE shop_settings
+      SET is_open = false, auto_closed_on = ${date}::date, updated_at = NOW()
+      WHERE id = 'current' AND is_open = true
+        AND (auto_closed_on IS NULL OR auto_closed_on <> ${date}::date)
+      RETURNING ${returnCols()}
+    `
+    if (updated) { broadcast(updated); return updated }
+    return row
+  }
+
   return row
 }
 
 export async function updateShopSettings(patch: Partial<ShopSettings>): Promise<ShopSettings> {
-  const { is_open, closed_message, auto_close_time } = patch
+  const { date } = nowTaipei()
 
-  // 手動切換 is_open（管它是開還是關）→ 清掉 auto_closed_on，讓自動關門邏輯隔天重新計算
-  const shouldResetAutoClosedOn = is_open !== undefined
+  // 手動開/關店 → 把對應的「今天已開/已關」標記設為今天，避免排程器立刻反向觸發
+  const openedOnFrag = patch.is_open === true  ? sql`${date}::date` : sql`auto_opened_on`
+  const closedOnFrag = patch.is_open === false ? sql`${date}::date` : sql`auto_closed_on`
 
   const [row] = await sql<ShopSettings[]>`
     UPDATE shop_settings SET
-      is_open         = COALESCE(${is_open ?? null}, is_open),
-      closed_message  = COALESCE(${closed_message ?? null}, closed_message),
-      auto_close_time = ${auto_close_time === undefined ? sql`auto_close_time` : auto_close_time},
-      auto_closed_on  = ${shouldResetAutoClosedOn ? null : sql`auto_closed_on`},
+      is_open         = ${patch.is_open         === undefined ? sql`is_open`         : patch.is_open},
+      closed_message  = ${patch.closed_message  === undefined ? sql`closed_message`  : patch.closed_message},
+      auto_open_time  = ${patch.auto_open_time  === undefined ? sql`auto_open_time`  : patch.auto_open_time},
+      auto_close_time = ${patch.auto_close_time === undefined ? sql`auto_close_time` : patch.auto_close_time},
+      off_weekdays    = ${patch.off_weekdays    === undefined ? sql`off_weekdays`    : sql.json(patch.off_weekdays)},
+      holidays        = ${patch.holidays        === undefined ? sql`holidays`        : sql.json(patch.holidays)},
+      auto_opened_on  = ${openedOnFrag},
+      auto_closed_on  = ${closedOnFrag},
       updated_at      = NOW()
     WHERE id = 'current'
-    RETURNING is_open, closed_message, auto_close_time,
-              to_char(auto_closed_on, 'YYYY-MM-DD') AS auto_closed_on
+    RETURNING ${returnCols()}
   `
-  emit('menu-updates', 'shop-settings-changed', row)
-  emit('kitchen', 'shop-settings-changed', row)
+  broadcast(row)
   return row
 }
