@@ -2,8 +2,9 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { MenuItem, MenuCategory, MenuOption } from '@/types'
+import type { MenuItem, MenuCategory, MenuOption, OptionGroup } from '@/types'
 import { TEMPERATURES } from '@/lib/temperature'
+import { resolveOptionGroup } from '@/lib/optionGroup'
 
 // ─── 型別 ─────────────────────────────────────────────────
 interface FormState {
@@ -14,7 +15,7 @@ interface FormState {
   price: string
   hasTemperature: boolean
   sort_order?: number
-  options: { id?: string; label: string; price_delta: string; isRequired?: boolean }[]
+  options: { id?: string; label: string; price_delta: string; isRequired?: boolean; group?: OptionGroup }[]
 }
 
 const EMPTY_FORM: FormState = {
@@ -184,6 +185,7 @@ export default function AdminMenuPage() {
         label: o.label,
         price_delta: String(o.price_delta),
         isRequired: o.id.startsWith('req_'),
+        group: o.group,
       }))
     setForm({
       id: item.id, category, newCategory: '', name: item.name,
@@ -211,6 +213,8 @@ export default function AdminMenuPage() {
   const removeOption   = (i: number) => setForm((f) => ({ ...f, options: f.options.filter((_, idx) => idx !== i) }))
   const updateOption   = (i: number, field: 'label' | 'price_delta', val: string) =>
     setForm((f) => { const opts = [...f.options]; opts[i] = { ...opts[i], [field]: val }; return { ...f, options: opts } })
+  const updateOptionGroup = (i: number, val: '' | OptionGroup) =>
+    setForm((f) => { const opts = [...f.options]; opts[i] = { ...opts[i], group: val || undefined }; return { ...f, options: opts } })
   const toggleRequired = (i: number) =>
     setForm((f) => { const opts = [...f.options]; opts[i] = { ...opts[i], isRequired: !opts[i].isRequired }; return { ...f, options: opts } })
 
@@ -255,7 +259,12 @@ export default function AdminMenuPage() {
       options: [
         ...form.options.filter((o) => o.label.trim()).map((o, i) => {
           const baseId = o.id ?? `OPT_${newIdTrimmed}_${Date.now()}_${i}`
-          return { id: o.isRequired ? `req_${baseId}` : baseId, label: o.label.trim(), price_delta: Number(o.price_delta) || 0 }
+          return {
+            id: o.isRequired ? `req_${baseId}` : baseId,
+            label: o.label.trim(),
+            price_delta: Number(o.price_delta) || 0,
+            ...(o.group ? { group: o.group } : {}),
+          }
         }),
         ...(form.hasTemperature ? TEMPERATURES : []),
       ] as MenuOption[],
@@ -672,13 +681,24 @@ export default function AdminMenuPage() {
                             style={{ borderColor: '#D4B896', color: '#3D2B1F', fontSize: 16 }}
                           />
                         </div>
+                        <select
+                          value={opt.group ?? ''}
+                          onChange={(e) => updateOptionGroup(i, e.target.value as '' | OptionGroup)}
+                          title="選項分類：自動依加價判斷，或手動指定"
+                          className="shrink-0 border rounded-lg px-2 py-2 text-sm outline-none"
+                          style={{ borderColor: '#D4B896', color: '#3D2B1F', fontSize: 16, maxWidth: 92 }}
+                        >
+                          <option value="">分類:自動{`（${resolveOptionGroup({ price_delta: Number(opt.price_delta) || 0 }) === 'addon' ? '加料' : '特殊'}）`}</option>
+                          <option value="addon">加料</option>
+                          <option value="special">特殊</option>
+                        </select>
                         <button type="button" onClick={() => removeOption(i)}
                           className="text-lg leading-none shrink-0" style={{ color: '#C9A97A' }}>
                           ✕
                         </button>
                       </div>
                     ))}
-                    <p className="text-xs" style={{ color: '#9C7A5A' }}>選項加價填 0 代表免費加點・拖移 ⠿ 可調整順序</p>
+                    <p className="text-xs" style={{ color: '#9C7A5A' }}>選項加價填 0 代表免費加點・分類預設依加價自動判斷（加價→加料・免費→特殊）・拖移 ⠿ 可調整順序</p>
                   </div>
                 )}
               </div>

@@ -1,4 +1,5 @@
 import type { Order } from '@/types'
+import { orderOptionsForDisplay } from '@/lib/optionGroup'
 
 const ESC = '\x1B'
 const GS  = '\x1D'
@@ -168,7 +169,7 @@ export function formatReceiptString(order: Order, storeName = '忠國豆漿店')
   // ── 品項────────────────────────────────────
   push(SIZE_TITLE)
   for (const item of order.items) {
-    const block = itemBlock(item.name, item.qty, item.price * item.qty, item.options ?? [], PAPER_WIDTH_TITLE)
+    const block = itemBlock(item.name, item.qty, item.price * item.qty, orderOptionsForDisplay(item.options ?? []), PAPER_WIDTH_TITLE)
     for (const line of block) push(line, LF)
   }
   push(SIZE_NORMAL, divider(), LF)

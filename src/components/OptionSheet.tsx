@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { MenuItem, CartItemOption } from '@/types'
+import { resolveOptionGroup } from '@/lib/optionGroup'
 
 interface OptionSheetProps {
   item: MenuItem
@@ -105,7 +106,9 @@ export function OptionSheet({ item, onAdd, onClose, initialOptions, initialQty }
       ? [reqOptions[selectedReqIdx]]
       : []
 
-    const regularOpts = regularOptions.filter((_, idx) => selected.includes(idx))
+    const regularOpts = regularOptions
+      .filter((_, idx) => selected.includes(idx))
+      .map(o => ({ ...o, group: resolveOptionGroup(o) }))
     onAdd([...sizeOpt, ...tempOpt, ...reqOpt, ...regularOpts], qty)
     onClose()
   }
@@ -117,6 +120,11 @@ export function OptionSheet({ item, onAdd, onClose, initialOptions, initialQty }
     const opt = sizeOptions.find(o => o.id === selectedSizeId)
     return opt ? item.price + opt.price_delta : item.price
   })()
+
+  // 一般客製選項依分類分流（保留原始 index 供 selected/toggle 使用）：加料在前、特殊在後
+  const indexedRegulars = regularOptions.map((opt, idx) => ({ opt, idx }))
+  const addonRegulars   = indexedRegulars.filter(({ opt }) => resolveOptionGroup(opt) === 'addon')
+  const specialRegulars = indexedRegulars.filter(({ opt }) => resolveOptionGroup(opt) === 'special')
 
   // ── 規格 Radio 列 ──────────────────────────────────────
   const SizeRow = ({
@@ -318,14 +326,40 @@ export function OptionSheet({ item, onAdd, onClose, initialOptions, initialQty }
             </div>
           )}
 
-          {/* ── 客製選項（多選） ── */}
-          {regularOptions.length > 0 && (
+          {/* ── 客製化加料（加價，多選） ── */}
+          {addonRegulars.length > 0 && (
             <div>
               <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: C.sub }}>
-                客製選項
+                客製化加料
               </p>
               <div className="space-y-2">
-                {regularOptions.map((opt, idx) => {
+                {addonRegulars.map(({ opt, idx }) => {
+                  const disabled = isOptionDisabled(opt)
+                  return (
+                    <CheckRow
+                      key={idx}
+                      id={opt.id}
+                      label={opt.label}
+                      priceDelta={opt.price_delta}
+                      checked={selected.includes(idx)}
+                      onToggle={() => toggleRegular(idx)}
+                      disabled={disabled}
+                      disabledHint={disabled ? '冰豆漿不可半糖' : undefined}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── 特殊選項（免費，多選） ── */}
+          {specialRegulars.length > 0 && (
+            <div>
+              <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: C.sub }}>
+                特殊選項
+              </p>
+              <div className="space-y-2">
+                {specialRegulars.map(({ opt, idx }) => {
                   const disabled = isOptionDisabled(opt)
                   return (
                     <CheckRow

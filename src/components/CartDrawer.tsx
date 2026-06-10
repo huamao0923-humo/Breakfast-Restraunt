@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import type { CartItem } from '@/types'
+import { orderOptionsForDisplay } from '@/lib/optionGroup'
 
 interface CartDrawerProps {
   items: CartItem[]
@@ -118,7 +119,7 @@ export function CartDrawer({
                       <div className="text-sm font-medium" style={{ color: '#3D2B1F' }}>{item.name}</div>
                       {item.options.length > 0 && (
                         <div className="text-xs mt-0.5" style={{ color: '#9C7A5A' }}>
-                          {item.options.map((opt) => opt.label).join('、')}
+                          {orderOptionsForDisplay(item.options).map((opt) => opt.label).join('、')}
                         </div>
                       )}
                       <div className="text-xs mt-1" style={{ color: '#B0A090' }}>${unitPrice} 元</div>

@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useRef, Suspense } from 'react'
 import type { Order } from '@/types'
+import { orderOptionsForDisplay } from '@/lib/optionGroup'
 import { usePrinter } from '@/hooks/usePrinter'
 import { useShopStatus } from '@/hooks/useShopStatus'
 
@@ -319,7 +320,7 @@ function KitchenContent() {
                           <span style={{ fontSize: 16, color: '#1C1C1E' }}>{item.name}</span>
                           {Array.isArray(item.options) && item.options.length > 0 && (
                             <p style={{ fontSize: 13, marginTop: 6, color: '#7A5C3A' }}>
-                              {item.options.map((o: { label: string }) => o.label).join('・')}
+                              {orderOptionsForDisplay(item.options).map((o) => o.label).join('・')}
                             </p>
                           )}
                         </div>

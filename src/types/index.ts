@@ -1,7 +1,10 @@
+export type OptionGroup = 'addon' | 'special'
+
 export interface MenuOption {
   id: string
   label: string
   price_delta: number
+  group?: OptionGroup
 }
 
 export interface MenuItem {
@@ -21,6 +24,7 @@ export interface CartItemOption {
   id: string
   label: string
   price_delta: number
+  group?: OptionGroup
 }
 
 export interface CartItem {
