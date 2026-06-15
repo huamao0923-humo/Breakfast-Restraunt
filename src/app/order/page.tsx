@@ -74,15 +74,37 @@ export default function OrderLandingPage() {
 
             <div className="flex flex-col gap-4">
               <button
+                onClick={() => setStep('online')}
+                className="w-full rounded-2xl py-6 flex flex-col items-center gap-2 transition-all active:scale-[0.97]"
+                style={{
+                  background: '#FFFDF7',
+                  border: '2px solid #A8926E',
+                  boxShadow: '0 2px 8px rgba(92,61,46,0.08)',
+                }}
+              >
+                <span className="text-4xl">📱</span>
+                <span className="text-xl font-bold tracking-[4px]" style={{ color: '#3D2B1F' }}>
+                  線上自取
+                </span>
+                <span className="text-sm" style={{ color: '#9C7A5A' }}>
+                  【在家點餐請按我】
+                </span>
+              </button>
+
+              <button
                 onClick={goTakeout}
                 className="w-full rounded-2xl py-6 flex flex-col items-center gap-2 transition-all active:scale-[0.97]"
-                style={{ background: '#5C3D2E', boxShadow: '0 4px 16px rgba(92,61,46,0.25)' }}
+                style={{
+                  background: '#FFFDF7',
+                  border: '2px solid #D4B896',
+                  boxShadow: '0 2px 8px rgba(92,61,46,0.08)',
+                }}
               >
                 <span className="text-4xl">🛍️</span>
-                <span className="text-xl font-bold tracking-[4px]" style={{ color: '#F5E6C8' }}>
+                <span className="text-xl font-bold tracking-[4px]" style={{ color: '#3D2B1F' }}>
                   外帶
                 </span>
-                <span className="text-xs" style={{ color: '#C9A97A' }}>
+                <span className="text-sm" style={{ color: '#9C7A5A' }}>
                   點餐完成後發放號碼牌
                 </span>
               </button>
@@ -100,26 +122,8 @@ export default function OrderLandingPage() {
                 <span className="text-xl font-bold tracking-[4px]" style={{ color: '#3D2B1F' }}>
                   內用
                 </span>
-                <span className="text-xs" style={{ color: '#9C7A5A' }}>
+                <span className="text-sm" style={{ color: '#9C7A5A' }}>
                   選擇桌號，輕鬆享用
-                </span>
-              </button>
-
-              <button
-                onClick={() => setStep('online')}
-                className="w-full rounded-2xl py-6 flex flex-col items-center gap-2 transition-all active:scale-[0.97]"
-                style={{
-                  background: '#FFFDF7',
-                  border: '2px solid #A8926E',
-                  boxShadow: '0 2px 8px rgba(92,61,46,0.08)',
-                }}
-              >
-                <span className="text-4xl">📱</span>
-                <span className="text-xl font-bold tracking-[4px]" style={{ color: '#3D2B1F' }}>
-                  線上自取
-                </span>
-                <span className="text-xs" style={{ color: '#9C7A5A' }}>
-                  在家點餐，到店取餐
                 </span>
               </button>
             </div>
