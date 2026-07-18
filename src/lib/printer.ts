@@ -96,7 +96,7 @@ function itemBlock(
   name: string,
   qty: number,
   subtotal: number,
-  options: { label: string }[],
+  options: { label: string; qty?: number }[],
   width: number = PAPER_WIDTH,
 ): string[] {
   const right  = `x${qty}  $${subtotal}`
@@ -118,7 +118,8 @@ function itemBlock(
 
   // 每項加料各自一行
   for (const opt of options) {
-    const optLines = wrapText(opt.label, width - 2)
+    const label = opt.qty && opt.qty > 1 ? `${opt.label} ×${opt.qty}` : opt.label
+    const optLines = wrapText(label, width - 2)
     lines.push(...optLines.map(l => '  ' + l))
   }
 

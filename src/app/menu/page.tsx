@@ -100,11 +100,11 @@ function ItemCard({
 
 // ── 共用：購物車品項列 ────────────────────────────────────
 function CartRow({ item, idx, onMinus, onPlus, onEdit, hasOpts }: {
-  item: { name: string; price: number; qty: number; options: { label: string; price_delta: number }[] }
+  item: { name: string; price: number; qty: number; options: { label: string; price_delta: number; qty?: number }[] }
   idx: number; onMinus: () => void; onPlus: () => void
   onEdit?: () => void; hasOpts?: boolean
 }) {
-  const unitPrice = item.price + item.options.reduce((s, o) => s + o.price_delta, 0)
+  const unitPrice = item.price + item.options.reduce((s, o) => s + o.price_delta * (o.qty ?? 1), 0)
   return (
     <div className="rounded-xl border p-3" style={{ background: C.card, borderColor: C.border }}>
       <div className="flex justify-between items-start mb-2">
@@ -122,7 +122,7 @@ function CartRow({ item, idx, onMinus, onPlus, onEdit, hasOpts }: {
           </div>
           {item.options.length > 0 && (
             <p className="text-xs mt-0.5" style={{ color: C.sub }}>
-              {item.options.map(o => o.label).join('・')}
+              {item.options.map(o => o.qty && o.qty > 1 ? `${o.label} ×${o.qty}` : o.label).join('・')}
             </p>
           )}
         </div>
@@ -148,7 +148,7 @@ function CartRow({ item, idx, onMinus, onPlus, onEdit, hasOpts }: {
 }
 
 // ── 主元件 ───────────────────────────────────────────────
-type ReceiptItem = { name: string; qty: number; unitPrice: number; options: { label: string }[] }
+type ReceiptItem = { name: string; qty: number; unitPrice: number; options: { label: string; qty?: number }[] }
 type ReceiptData = { items: ReceiptItem[]; total: number; note: string; pickupNumber: number | null; customerName?: string; customerPhone?: string }
 
 function MenuContent() {
@@ -237,7 +237,7 @@ function MenuContent() {
     try {
       const formattedItems = items.map(i => ({
         id: i.id, name: i.name, qty: i.qty,
-        price: i.price + i.options.reduce((s, o) => s + o.price_delta, 0),
+        price: i.price + i.options.reduce((s, o) => s + o.price_delta * (o.qty ?? 1), 0),
         options: i.options,
       }))
       const res = await fetch('/api/orders', {
@@ -264,8 +264,8 @@ function MenuContent() {
       const receiptItems: ReceiptItem[] = items.map(i => ({
         name: i.name,
         qty: i.qty,
-        unitPrice: i.price + i.options.reduce((s, o) => s + o.price_delta, 0),
-        options: i.options.map(o => ({ label: o.label })),
+        unitPrice: i.price + i.options.reduce((s, o) => s + o.price_delta * (o.qty ?? 1), 0),
+        options: i.options.map(o => ({ label: o.label, qty: o.qty })),
       }))
       const receiptData: ReceiptData = {
         items: receiptItems,
@@ -552,7 +552,7 @@ function MenuContent() {
                     </div>
                     {item.options.length > 0 && (
                       <p className="text-xs mt-0.5" style={{ color: '#9C7A5A' }}>
-                        {item.options.map(o => o.label).join('・')}
+                        {item.options.map(o => o.qty && o.qty > 1 ? `${o.label} ×${o.qty}` : o.label).join('・')}
                       </p>
                     )}
                   </div>

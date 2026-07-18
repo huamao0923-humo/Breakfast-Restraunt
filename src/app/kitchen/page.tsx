@@ -320,7 +320,7 @@ function KitchenContent() {
                           <span style={{ fontSize: 16, color: '#1C1C1E' }}>{item.name}</span>
                           {Array.isArray(item.options) && item.options.length > 0 && (
                             <p style={{ fontSize: 13, marginTop: 6, color: '#7A5C3A' }}>
-                              {orderOptionsForDisplay(item.options).map((o) => o.label).join('・')}
+                              {orderOptionsForDisplay(item.options).map((o) => o.qty && o.qty > 1 ? `${o.label} ×${o.qty}` : o.label).join('・')}
                             </p>
                           )}
                         </div>

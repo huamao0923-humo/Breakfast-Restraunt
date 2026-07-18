@@ -51,11 +51,14 @@ export function OptionSheet({ item, onAdd, onClose, initialOptions, initialQty }
     const idx = reqOptions.findIndex(o => o.id === req.id && o.label === req.label)
     return idx >= 0 ? idx : null
   })()
-  const initSelected = initialOptions
-    ? regularOptions
-        .map((opt, idx) => initialOptions.some(io => io.id === opt.id && io.label === opt.label) ? idx : -1)
-        .filter(idx => idx >= 0)
-    : []
+  // 一般客製選項的初始已選數量（index → qty；編輯時帶入原選及原數量）
+  const initSelectedQty: Record<number, number> = {}
+  if (initialOptions) {
+    regularOptions.forEach((opt, idx) => {
+      const match = initialOptions.find(io => io.id === opt.id && io.label === opt.label)
+      if (match) initSelectedQty[idx] = match.qty ?? 1
+    })
+  }
 
   // 規格：單選，必選（編輯時帶入原值）
   const [selectedSizeId, setSelectedSizeId] = useState<string | null>(initSizeId)
@@ -63,8 +66,8 @@ export function OptionSheet({ item, onAdd, onClose, initialOptions, initialQty }
   const [selectedTempId, setSelectedTempId] = useState<string | null>(initTempId)
   // 必選群組：單選，必選（編輯時帶入原值）
   const [selectedReqIdx, setSelectedReqIdx] = useState<number | null>(initReqIdx)
-  // 一般客製：多選（以 index 追蹤，避免 DB 中重複 id 互相干擾；編輯時帶入原選）
-  const [selected, setSelected] = useState<number[]>(initSelected)
+  // 一般客製：多選＋可疊加數量（index → 已選數量；避免 DB 中重複 id 互相干擾；編輯時帶入原選）
+  const [selectedQty, setSelectedQty] = useState<Record<number, number>>(initSelectedQty)
   // 數量
   const [qty, setQty] = useState(initialQty ?? 1)
 
@@ -78,13 +81,37 @@ export function OptionSheet({ item, onAdd, onClose, initialOptions, initialQty }
   // 切到冰豆漿時自動取消已選的半糖
   useEffect(() => {
     if (!isIceSoymilk) return
-    setSelected(prev => prev.filter(idx => !regularOptions[idx]?.label.includes('半糖')))
+    setSelectedQty(prev => {
+      const next = { ...prev }
+      regularOptions.forEach((opt, idx) => { if (opt.label.includes('半糖')) delete next[idx] })
+      return next
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTempId, item.id])
 
+  // 一般勾選（max_qty <= 1）：點一下切換 0/1
   const toggleRegular = (idx: number) => {
     if (isOptionDisabled(regularOptions[idx])) return
-    setSelected(prev => prev.includes(idx) ? prev.filter(x => x !== idx) : [...prev, idx])
+    setSelectedQty(prev => {
+      const copy = { ...prev }
+      if (copy[idx]) delete copy[idx]
+      else copy[idx] = 1
+      return copy
+    })
+  }
+
+  // 可疊加數量（max_qty > 1）：＋／－ 調整，超出上限或低於 0 會被夾住
+  const changeQty = (idx: number, delta: number) => {
+    if (isOptionDisabled(regularOptions[idx])) return
+    const max = regularOptions[idx].max_qty ?? 1
+    setSelectedQty(prev => {
+      const cur = prev[idx] ?? 0
+      const next = Math.min(max, Math.max(0, cur + delta))
+      const copy = { ...prev }
+      if (next <= 0) delete copy[idx]
+      else copy[idx] = next
+      return copy
+    })
   }
 
   const canAdd = (hasSizeOpts
@@ -106,9 +133,11 @@ export function OptionSheet({ item, onAdd, onClose, initialOptions, initialQty }
       ? [reqOptions[selectedReqIdx]]
       : []
 
-    const regularOpts = regularOptions
-      .filter((_, idx) => selected.includes(idx))
-      .map(o => ({ ...o, group: resolveOptionGroup(o) }))
+    const regularOpts: CartItemOption[] = regularOptions.flatMap((o, idx) => {
+      const q = selectedQty[idx] ?? 0
+      if (q <= 0) return []
+      return [{ ...o, group: resolveOptionGroup(o), ...(q > 1 ? { qty: q } : {}) }]
+    })
     onAdd([...sizeOpt, ...tempOpt, ...reqOpt, ...regularOpts], qty)
     onClose()
   }
@@ -202,6 +231,57 @@ export function OptionSheet({ item, onAdd, onClose, initialOptions, initialQty }
         </div>
       </div>
     </button>
+  )
+
+  // ── 可疊加數量列（max_qty > 1，例如可選多份的加料）─────────
+  const QtyRow = ({
+    label, priceDelta, qty: rowQty, max, onChange, disabled, disabledHint,
+  }: { label: string; priceDelta: number; qty: number; max: number; onChange: (delta: number) => void; disabled?: boolean; disabledHint?: string }) => (
+    <div
+      className="w-full flex items-center justify-between rounded-2xl transition-all"
+      style={{
+        minHeight: 56,
+        padding: '0 16px',
+        background: rowQty > 0 ? '#FEF3C7' : C.pill,
+        border: `2px solid ${rowQty > 0 ? C.primary : 'transparent'}`,
+        opacity: disabled ? 0.4 : 1,
+      }}
+    >
+      <span className="text-base font-semibold flex items-center gap-2" style={{ color: C.text }}>
+        {label}
+        {disabled && disabledHint && (
+          <span className="text-xs font-normal" style={{ color: C.sub }}>{disabledHint}</span>
+        )}
+      </span>
+      <div className="flex items-center gap-3 shrink-0">
+        {priceDelta !== 0 && (
+          <span className="text-sm font-medium" style={{ color: C.sub }}>
+            {priceDelta > 0 ? `+$${priceDelta}` : `-$${Math.abs(priceDelta)}`}
+          </span>
+        )}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onChange(-1)}
+            disabled={disabled || rowQty <= 0}
+            className="w-7 h-7 rounded-full flex items-center justify-center text-base font-bold transition-all active:scale-90 disabled:opacity-40"
+            style={{ background: '#fff', color: C.text, border: `1.5px solid ${C.border}` }}
+          >
+            －
+          </button>
+          <span className="text-base font-bold w-4 text-center" style={{ color: C.text }}>{rowQty}</span>
+          <button
+            type="button"
+            onClick={() => onChange(1)}
+            disabled={disabled || rowQty >= max}
+            className="w-7 h-7 rounded-full flex items-center justify-center text-base font-bold transition-all active:scale-90 disabled:opacity-40"
+            style={{ background: C.primary, color: '#fff' }}
+          >
+            ＋
+          </button>
+        </div>
+      </div>
+    </div>
   )
 
   return (
@@ -335,13 +415,24 @@ export function OptionSheet({ item, onAdd, onClose, initialOptions, initialQty }
               <div className="space-y-2">
                 {addonRegulars.map(({ opt, idx }) => {
                   const disabled = isOptionDisabled(opt)
-                  return (
+                  return (opt.max_qty ?? 1) > 1 ? (
+                    <QtyRow
+                      key={idx}
+                      label={opt.label}
+                      priceDelta={opt.price_delta}
+                      qty={selectedQty[idx] ?? 0}
+                      max={opt.max_qty ?? 1}
+                      onChange={(delta) => changeQty(idx, delta)}
+                      disabled={disabled}
+                      disabledHint={disabled ? '冰豆漿不可半糖' : undefined}
+                    />
+                  ) : (
                     <CheckRow
                       key={idx}
                       id={opt.id}
                       label={opt.label}
                       priceDelta={opt.price_delta}
-                      checked={selected.includes(idx)}
+                      checked={(selectedQty[idx] ?? 0) > 0}
                       onToggle={() => toggleRegular(idx)}
                       disabled={disabled}
                       disabledHint={disabled ? '冰豆漿不可半糖' : undefined}
@@ -361,13 +452,24 @@ export function OptionSheet({ item, onAdd, onClose, initialOptions, initialQty }
               <div className="space-y-2">
                 {specialRegulars.map(({ opt, idx }) => {
                   const disabled = isOptionDisabled(opt)
-                  return (
+                  return (opt.max_qty ?? 1) > 1 ? (
+                    <QtyRow
+                      key={idx}
+                      label={opt.label}
+                      priceDelta={opt.price_delta}
+                      qty={selectedQty[idx] ?? 0}
+                      max={opt.max_qty ?? 1}
+                      onChange={(delta) => changeQty(idx, delta)}
+                      disabled={disabled}
+                      disabledHint={disabled ? '冰豆漿不可半糖' : undefined}
+                    />
+                  ) : (
                     <CheckRow
                       key={idx}
                       id={opt.id}
                       label={opt.label}
                       priceDelta={opt.price_delta}
-                      checked={selected.includes(idx)}
+                      checked={(selectedQty[idx] ?? 0) > 0}
                       onToggle={() => toggleRegular(idx)}
                       disabled={disabled}
                       disabledHint={disabled ? '冰豆漿不可半糖' : undefined}

@@ -58,7 +58,7 @@ export function useCart() {
   }, [])
 
   const total = items.reduce((sum, item) => {
-    const itemPrice = item.price + item.options.reduce((o, opt) => o + opt.price_delta, 0)
+    const itemPrice = item.price + item.options.reduce((o, opt) => o + opt.price_delta * (opt.qty ?? 1), 0)
     return sum + itemPrice * item.qty
   }, 0)
 

@@ -5,6 +5,7 @@ export interface MenuOption {
   label: string
   price_delta: number
   group?: OptionGroup
+  max_qty?: number
 }
 
 export interface MenuItem {
@@ -25,6 +26,7 @@ export interface CartItemOption {
   label: string
   price_delta: number
   group?: OptionGroup
+  qty?: number
 }
 
 export interface CartItem {

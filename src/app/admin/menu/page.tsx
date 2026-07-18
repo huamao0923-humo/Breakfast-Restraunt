@@ -15,7 +15,7 @@ interface FormState {
   price: string
   hasTemperature: boolean
   sort_order?: number
-  options: { id?: string; label: string; price_delta: string; isRequired?: boolean; group?: OptionGroup }[]
+  options: { id?: string; label: string; price_delta: string; isRequired?: boolean; group?: OptionGroup; max_qty?: string }[]
 }
 
 const EMPTY_FORM: FormState = {
@@ -186,6 +186,7 @@ export default function AdminMenuPage() {
         price_delta: String(o.price_delta),
         isRequired: o.id.startsWith('req_'),
         group: o.group,
+        max_qty: o.max_qty ? String(o.max_qty) : undefined,
       }))
     setForm({
       id: item.id, category, newCategory: '', name: item.name,
@@ -211,7 +212,7 @@ export default function AdminMenuPage() {
 
   const addOption      = () => setForm((f) => ({ ...f, options: [...f.options, { id: `OPT_new_${Date.now()}`, label: '', price_delta: '0' }] }))
   const removeOption   = (i: number) => setForm((f) => ({ ...f, options: f.options.filter((_, idx) => idx !== i) }))
-  const updateOption   = (i: number, field: 'label' | 'price_delta', val: string) =>
+  const updateOption   = (i: number, field: 'label' | 'price_delta' | 'max_qty', val: string) =>
     setForm((f) => { const opts = [...f.options]; opts[i] = { ...opts[i], [field]: val }; return { ...f, options: opts } })
   const updateOptionGroup = (i: number, val: '' | OptionGroup) =>
     setForm((f) => { const opts = [...f.options]; opts[i] = { ...opts[i], group: val || undefined }; return { ...f, options: opts } })
@@ -259,11 +260,13 @@ export default function AdminMenuPage() {
       options: [
         ...form.options.filter((o) => o.label.trim()).map((o, i) => {
           const baseId = o.id ?? `OPT_${newIdTrimmed}_${Date.now()}_${i}`
+          const maxQty = Number(o.max_qty) || 1
           return {
             id: o.isRequired ? `req_${baseId}` : baseId,
             label: o.label.trim(),
             price_delta: Number(o.price_delta) || 0,
             ...(o.group ? { group: o.group } : {}),
+            ...(maxQty > 1 ? { max_qty: maxQty } : {}),
           }
         }),
         ...(form.hasTemperature ? TEMPERATURES : []),
@@ -681,6 +684,15 @@ export default function AdminMenuPage() {
                             style={{ borderColor: '#D4B896', color: '#3D2B1F', fontSize: 16 }}
                           />
                         </div>
+                        <div className="flex items-center gap-1 shrink-0" title="顧客最多可將此選項疊加幾份（例如：九層塔蛋 x2）">
+                          <span className="text-sm font-medium" style={{ color: '#C9A97A' }}>上限</span>
+                          <input type="number" value={opt.max_qty ?? ''}
+                            onChange={(e) => updateOption(i, 'max_qty', e.target.value)}
+                            min={1} max={20} placeholder="1"
+                            className="w-14 border rounded-lg px-3 py-2 text-sm outline-none"
+                            style={{ borderColor: '#D4B896', color: '#3D2B1F', fontSize: 16 }}
+                          />
+                        </div>
                         <select
                           value={opt.group ?? ''}
                           onChange={(e) => updateOptionGroup(i, e.target.value as '' | OptionGroup)}
@@ -698,7 +710,7 @@ export default function AdminMenuPage() {
                         </button>
                       </div>
                     ))}
-                    <p className="text-xs" style={{ color: '#9C7A5A' }}>選項加價填 0 代表免費加點・分類預設依加價自動判斷（加價→加料・免費→特殊）・拖移 ⠿ 可調整順序</p>
+                    <p className="text-xs" style={{ color: '#9C7A5A' }}>選項加價填 0 代表免費加點・分類預設依加價自動判斷（加價→加料・免費→特殊）・上限大於 1 時顧客可疊加數量（例如九層塔蛋 x2）・拖移 ⠿ 可調整順序</p>
                   </div>
                 )}
               </div>

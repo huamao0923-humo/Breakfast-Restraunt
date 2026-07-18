@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import type { Order } from '@/types'
+import { orderOptionsForDisplay } from '@/lib/optionGroup'
 
 export const dynamic = 'force-dynamic'
 
@@ -271,14 +272,21 @@ export default function ReportPage() {
                     {/* 品項 */}
                     <div className="px-4 py-2">
                       {order.items.map((item, i) => (
-                        <div key={i} className="flex justify-between py-1.5 border-b border-dashed last:border-b-0"
+                        <div key={i} className="py-1.5 border-b border-dashed last:border-b-0"
                           style={{ borderColor: '#EDE5D8' }}>
-                          <span className="text-[13px]" style={{ color: '#5C4030' }}>
-                            {item.name} ×{item.qty}
-                          </span>
-                          <span className="text-[13px]" style={{ color: '#8B5E3C' }}>
-                            ${item.price * item.qty}
-                          </span>
+                          <div className="flex justify-between">
+                            <span className="text-[13px]" style={{ color: '#5C4030' }}>
+                              {item.name} ×{item.qty}
+                            </span>
+                            <span className="text-[13px]" style={{ color: '#8B5E3C' }}>
+                              ${item.price * item.qty}
+                            </span>
+                          </div>
+                          {Array.isArray(item.options) && item.options.length > 0 && (
+                            <p className="text-xs mt-0.5" style={{ color: '#9C7A5A' }}>
+                              {orderOptionsForDisplay(item.options).map((o) => o.qty && o.qty > 1 ? `${o.label} ×${o.qty}` : o.label).join('・')}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
