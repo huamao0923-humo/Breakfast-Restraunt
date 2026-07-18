@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "廚房出單",
+    "slug": "printer-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "android": {
+      "package": "com.breakfast.printerapp",
+      "adaptiveIcon": {
+        "backgroundColor": "#A8926E"
+      },
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
+    },
+    "plugins": []
+  }
+}
