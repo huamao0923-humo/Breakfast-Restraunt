@@ -64,7 +64,7 @@ function ItemCard({
           )}
         </div>
         {item.description && (
-          <p className="text-xs mb-0.5" style={{ color: C.muted }}>{item.description}</p>
+          <p className="text-sm mb-0.5" style={{ color: C.sub }}>{item.description}</p>
         )}
         {hasSizeOpts ? (
           <span className="text-sm font-medium" style={{ color: C.muted }}>${minPrice} 起</span>
