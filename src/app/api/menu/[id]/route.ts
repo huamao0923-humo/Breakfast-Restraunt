@@ -8,7 +8,7 @@ export async function PUT(
   try {
     const body = await request.json()
     const { id } = await params
-    const { id: newId, category, name, price, options, sort_order } = body
+    const { id: newId, category, name, price, options, sort_order, description } = body
 
     if (!category || !name || price === undefined) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -31,7 +31,8 @@ export async function PUT(
           name     = ${name},
           price    = ${Number(price)},
           options  = ${sql.json(options ?? [])},
-          sort_order = ${sort_order ?? 0}
+          sort_order = ${sort_order ?? 0},
+          description = ${description || null}
       WHERE id = ${id}
       RETURNING *
     `

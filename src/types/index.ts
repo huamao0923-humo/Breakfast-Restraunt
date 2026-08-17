@@ -14,6 +14,7 @@ export interface MenuItem {
   price: number
   options: MenuOption[]
   sort_order?: number
+  description?: string
 }
 
 export interface MenuCategory {
@@ -35,6 +36,7 @@ export interface CartItem {
   price: number
   qty: number
   options: CartItemOption[]
+  description?: string
 }
 
 export interface OrderItem {
@@ -43,6 +45,7 @@ export interface OrderItem {
   qty: number
   price: number
   options: CartItemOption[]
+  description?: string
 }
 
 export interface Order {

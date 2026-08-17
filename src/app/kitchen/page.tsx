@@ -318,6 +318,11 @@ function KitchenContent() {
                         style={{ borderColor: 'rgba(0,0,0,0.15)', padding: '12px 0' }}>
                         <div className="flex-1 min-w-0" style={{ paddingRight: 16 }}>
                           <span style={{ fontSize: 16, color: '#1C1C1E' }}>{item.name}</span>
+                          {item.description && (
+                            <p style={{ fontSize: 13, marginTop: 6, color: '#9C7A5A', fontStyle: 'italic' }}>
+                              {item.description}
+                            </p>
+                          )}
                           {Array.isArray(item.options) && item.options.length > 0 && (
                             <p style={{ fontSize: 13, marginTop: 6, color: '#7A5C3A' }}>
                               {orderOptionsForDisplay(item.options).map((o) => o.qty && o.qty > 1 ? `${o.label} ×${o.qty}` : o.label).join('・')}

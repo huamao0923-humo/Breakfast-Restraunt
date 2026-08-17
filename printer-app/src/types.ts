@@ -15,6 +15,7 @@ export interface OrderItem {
   qty: number
   price: number
   options?: OrderOption[]
+  description?: string
 }
 
 /**

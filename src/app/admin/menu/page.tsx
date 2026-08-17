@@ -16,10 +16,11 @@ interface FormState {
   hasTemperature: boolean
   sort_order?: number
   options: { id?: string; label: string; price_delta: string; isRequired?: boolean; group?: OptionGroup; max_qty?: string }[]
+  description: string
 }
 
 const EMPTY_FORM: FormState = {
-  id: '', category: '', newCategory: '', name: '', price: '', hasTemperature: false, options: [],
+  id: '', category: '', newCategory: '', name: '', price: '', hasTemperature: false, options: [], description: '',
 }
 
 // ─── 自動產生 ID ──────────────────────────────────────────
@@ -194,6 +195,7 @@ export default function AdminMenuPage() {
       hasTemperature: hasTempOpts,
       sort_order: item.sort_order,
       options: nonTempOptions,
+      description: item.description ?? '',
     })
     setEditingId(item.id)
     setShowNewCategoryInput(false)
@@ -257,6 +259,7 @@ export default function AdminMenuPage() {
     const payload = {
       id: newIdTrimmed, category: finalCategory, name: form.name.trim(),
       price: Number(form.price),
+      description: form.description.trim() || null,
       options: [
         ...form.options.filter((o) => o.label.trim()).map((o, i) => {
           const baseId = o.id ?? `OPT_${newIdTrimmed}_${Date.now()}_${i}`
@@ -586,6 +589,21 @@ export default function AdminMenuPage() {
                   className="w-full border rounded-lg px-3 py-2 text-sm outline-none"
                   style={{ borderColor: '#D4B896', color: '#3D2B1F', fontSize: 16 }}
                 />
+              </div>
+
+              {/* 說明 */}
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: '#5C3D2E' }}>
+                  品項說明 <span className="text-xs font-normal" style={{ color: '#9C7A5A' }}>(選填，例如內含配料)</span>
+                </label>
+                <textarea value={form.description}
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="例如：內含油條、蔥花、蝦皮、烏醋"
+                  rows={2}
+                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none resize-none"
+                  style={{ borderColor: '#D4B896', color: '#3D2B1F', fontSize: 16 }}
+                />
+                <p className="text-xs mt-1" style={{ color: '#9C7A5A' }}>會顯示在點餐畫面與廚房畫面，不會印在紙本出單上</p>
               </div>
 
               {/* 價格 */}

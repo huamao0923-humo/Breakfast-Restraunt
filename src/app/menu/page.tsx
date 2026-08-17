@@ -63,6 +63,9 @@ function ItemCard({
               style={{ background: '#FEF3C7', color: '#92400E' }}>可客製</span>
           )}
         </div>
+        {item.description && (
+          <p className="text-xs mb-0.5" style={{ color: C.muted }}>{item.description}</p>
+        )}
         {hasSizeOpts ? (
           <span className="text-sm font-medium" style={{ color: C.muted }}>${minPrice} 起</span>
         ) : (
@@ -211,7 +214,7 @@ function MenuContent() {
       updateQty(editingCartIdx, qty)
       setEditingCartIdx(null)
     } else {
-      addItem(showOptions.id, showOptions.name, showOptions.price, options, qty)
+      addItem(showOptions.id, showOptions.name, showOptions.price, options, qty, showOptions.description)
     }
     setShowOptions(null)
   }
@@ -239,6 +242,7 @@ function MenuContent() {
         id: i.id, name: i.name, qty: i.qty,
         price: i.price + i.options.reduce((s, o) => s + o.price_delta * (o.qty ?? 1), 0),
         options: i.options,
+        ...(i.description ? { description: i.description } : {}),
       }))
       const res = await fetch('/api/orders', {
         method: 'POST',
@@ -362,7 +366,7 @@ function MenuContent() {
               <ItemCard key={item.id}
                 item={item} qty={qty} isSoldOut={isSoldOut}
                 hasOpts={hasOpts} hasSizeOpts={hasSizeOpts} minPrice={minPrice}
-                onAdd={() => addItem(item.id, item.name, item.price, [])}
+                onAdd={() => addItem(item.id, item.name, item.price, [], 1, item.description)}
                 onMinus={() => handleMinus(item.id)}
                 onOpenOptions={() => setShowOptions(item)}
               />

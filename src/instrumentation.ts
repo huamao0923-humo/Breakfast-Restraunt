@@ -30,6 +30,9 @@ export async function register() {
     // 自動列印用：紀錄訂單被列印的時間，原子佔位避免重複列印
     await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS printed_at TIMESTAMPTZ`
 
+    // 品項說明（給客人/廚房看的內部備註，不列印在紙本上）
+    await sql`ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS description TEXT`
+
     // 營業狀態 singleton row（id='current'）
     await sql`
       CREATE TABLE IF NOT EXISTS shop_settings (

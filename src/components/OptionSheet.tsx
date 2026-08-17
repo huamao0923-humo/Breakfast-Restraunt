@@ -315,6 +315,9 @@ export function OptionSheet({ item, onAdd, onClose, initialOptions, initialQty }
               </span>
             )}
           </div>
+          {item.description && (
+            <p className="text-sm mt-1" style={{ color: C.sub }}>{item.description}</p>
+          )}
         </div>
 
         {/* 選項區（可捲動） */}

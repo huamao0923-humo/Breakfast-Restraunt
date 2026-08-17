@@ -29,6 +29,7 @@ export async function GET() {
         price: row.price,
         options: row.options ?? [],
         sort_order: row.sort_order,
+        ...(row.description ? { description: row.description } : {}),
       })
     }
 
@@ -42,7 +43,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, category, name, price, options, sort_order } = body
+    const { id, category, name, price, options, sort_order, description } = body
 
     if (!id || !category || !name || price === undefined) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -56,8 +57,8 @@ export async function POST(request: NextRequest) {
     const nextSortOrder = Number(max_sort) + 1
 
     const [row] = await sql`
-      INSERT INTO menu_items (id, category, name, price, options, sort_order)
-      VALUES (${id}, ${category}, ${name}, ${Number(price)}, ${sql.json(options ?? [])}, ${nextSortOrder})
+      INSERT INTO menu_items (id, category, name, price, options, sort_order, description)
+      VALUES (${id}, ${category}, ${name}, ${Number(price)}, ${sql.json(options ?? [])}, ${nextSortOrder}, ${description || null})
       RETURNING *
     `
 

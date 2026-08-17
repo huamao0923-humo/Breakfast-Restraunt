@@ -225,6 +225,9 @@ export default function App() {
                       <View key={i} style={s.itemRow}>
                         <View style={s.itemLeft}>
                           <Text style={s.itemName}>{item.name}</Text>
+                          {item.description && (
+                            <Text style={s.itemDesc}>{item.description}</Text>
+                          )}
                           {item.options && item.options.length > 0 && (
                             <Text style={s.itemOpts}>
                               {orderOptionsForDisplay(item.options).map((o) => o.qty && o.qty > 1 ? `${o.label} ×${o.qty}` : o.label).join('・')}
@@ -324,6 +327,7 @@ const s = StyleSheet.create({
                     borderStyle: 'dashed' },
   itemLeft:       { flex: 1, paddingRight: 16 },
   itemName:       { fontSize: 15, color: '#1C1C1E' },
+  itemDesc:       { fontSize: 12, color: '#9C7A5A', marginTop: 4, fontStyle: 'italic' },
   itemOpts:       { fontSize: 12, color: '#7A5C3A', marginTop: 4 },
   itemRight:      { flexDirection: 'row', alignItems: 'center', gap: 12 },
   qtyBadge:       { backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 12,
