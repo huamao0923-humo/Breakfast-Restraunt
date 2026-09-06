@@ -20,7 +20,7 @@ export default function OrderLandingPage() {
   if (shop.loading) {
     return (
       <div className="flex items-center justify-center min-h-screen"
-        style={{ background: '#F7F4F0', color: '#9C7A5A', fontFamily: "'Noto Serif TC', serif", fontSize: 16 }}>
+        style={{ background: '#F7F4F0', color: '#9C7A5A', fontFamily: "'Noto Serif TC', serif", fontSize: 18 }}>
         載入中…
       </div>
     )
@@ -57,10 +57,10 @@ export default function OrderLandingPage() {
 
         {/* Logo */}
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold tracking-[8px] mb-2" style={{ color: '#3D2B1F' }}>
+          <h1 className="text-4xl font-bold tracking-[8px] mb-2" style={{ color: '#3D2B1F' }}>
             忠國豆漿
           </h1>
-          <p className="text-sm tracking-[2px]" style={{ color: '#9C7A5A' }}>
+          <p className="text-base tracking-[2px]" style={{ color: '#9C7A5A' }}>
             手工現做・新鮮美味
           </p>
         </div>
@@ -68,7 +68,7 @@ export default function OrderLandingPage() {
         {/* ── Step 1：選擇用餐方式 ── */}
         {step === 'choose' && (
           <>
-            <p className="text-center text-base font-semibold mb-6" style={{ color: '#5C3D2E' }}>
+            <p className="text-center text-lg font-semibold mb-6" style={{ color: '#5C3D2E' }}>
               請選擇用餐方式
             </p>
 
@@ -82,12 +82,12 @@ export default function OrderLandingPage() {
                   boxShadow: '0 2px 8px rgba(92,61,46,0.08)',
                 }}
               >
-                <span className="text-4xl">📱</span>
-                <span className="text-xl font-bold tracking-[4px]" style={{ color: '#3D2B1F' }}>
+                <span className="text-5xl">📱</span>
+                <span className="text-2xl font-bold tracking-[4px]" style={{ color: '#3D2B1F' }}>
                   線上自取
                 </span>
-                <span className="text-sm" style={{ color: '#9C7A5A' }}>
-                  【在家點餐請按我】
+                <span className="text-base" style={{ color: '#9C7A5A' }}>
+                  【在家預定餐點請點我】
                 </span>
               </button>
 
@@ -100,12 +100,12 @@ export default function OrderLandingPage() {
                   boxShadow: '0 2px 8px rgba(92,61,46,0.08)',
                 }}
               >
-                <span className="text-4xl">🛍️</span>
-                <span className="text-xl font-bold tracking-[4px]" style={{ color: '#3D2B1F' }}>
-                  外帶
+                <span className="text-5xl">🛍️</span>
+                <span className="text-2xl font-bold tracking-[4px]" style={{ color: '#3D2B1F' }}>
+                  現場外帶
                 </span>
-                <span className="text-sm" style={{ color: '#9C7A5A' }}>
-                  點餐完成後發放號碼牌
+                <span className="text-base" style={{ color: '#9C7A5A' }}>
+                  現場點餐專用!
                 </span>
               </button>
 
@@ -118,11 +118,11 @@ export default function OrderLandingPage() {
                   boxShadow: '0 2px 8px rgba(92,61,46,0.08)',
                 }}
               >
-                <span className="text-4xl">🍽️</span>
-                <span className="text-xl font-bold tracking-[4px]" style={{ color: '#3D2B1F' }}>
+                <span className="text-5xl">🍽️</span>
+                <span className="text-2xl font-bold tracking-[4px]" style={{ color: '#3D2B1F' }}>
                   內用
                 </span>
-                <span className="text-sm" style={{ color: '#9C7A5A' }}>
+                <span className="text-base" style={{ color: '#9C7A5A' }}>
                   選擇桌號，輕鬆享用
                 </span>
               </button>
@@ -137,11 +137,11 @@ export default function OrderLandingPage() {
               <button
                 onClick={() => setStep('choose')}
                 className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-                style={{ background: '#EDE5D8', color: '#5C3D2E', fontSize: 18 }}
+                style={{ background: '#EDE5D8', color: '#5C3D2E', fontSize: 20 }}
               >
                 ‹
               </button>
-              <p className="text-base font-semibold" style={{ color: '#5C3D2E' }}>
+              <p className="text-lg font-semibold" style={{ color: '#5C3D2E' }}>
                 請選擇桌號
               </p>
             </div>
@@ -158,13 +158,13 @@ export default function OrderLandingPage() {
                     boxShadow: '0 2px 6px rgba(92,61,46,0.07)',
                   }}
                 >
-                  <span className="text-3xl font-black" style={{ color: '#5C3D2E' }}>{n}</span>
-                  <span className="text-xs" style={{ color: '#9C7A5A' }}>桌</span>
+                  <span className="text-4xl font-black" style={{ color: '#5C3D2E' }}>{n}</span>
+                  <span className="text-sm" style={{ color: '#9C7A5A' }}>桌</span>
                 </button>
               ))}
             </div>
 
-            <p className="text-center text-xs mt-6" style={{ color: '#C9A97A' }}>
+            <p className="text-center text-sm mt-6" style={{ color: '#C9A97A' }}>
               選錯了？點左上角返回重選
             </p>
           </>
@@ -177,23 +177,23 @@ export default function OrderLandingPage() {
               <button
                 onClick={() => { setStep('choose'); setErrors({}) }}
                 className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-                style={{ background: '#EDE5D8', color: '#5C3D2E', fontSize: 18 }}
+                style={{ background: '#EDE5D8', color: '#5C3D2E', fontSize: 20 }}
               >
                 ‹
               </button>
-              <p className="text-base font-semibold" style={{ color: '#5C3D2E' }}>
+              <p className="text-lg font-semibold" style={{ color: '#5C3D2E' }}>
                 線上點餐自取
               </p>
             </div>
 
-            <p className="text-sm mb-6" style={{ color: '#7A5C3A' }}>
+            <p className="text-base mb-6" style={{ color: '#7A5C3A' }}>
               請填寫基本資料，方便我們準備餐點並通知您
             </p>
 
             <div className="flex flex-col gap-4">
               {/* 稱呼 */}
               <div>
-                <label className="text-sm font-semibold block mb-1.5" style={{ color: '#5C3D2E' }}>
+                <label className="text-base font-semibold block mb-1.5" style={{ color: '#5C3D2E' }}>
                   稱呼
                 </label>
                 <input
@@ -201,7 +201,7 @@ export default function OrderLandingPage() {
                   value={customerName}
                   onChange={(e) => { setCustomerName(e.target.value); setErrors(v => ({ ...v, name: undefined })) }}
                   placeholder="例：王小明"
-                  className="w-full rounded-xl px-4 py-3 text-base outline-none transition-all"
+                  className="w-full rounded-xl px-4 py-3 text-lg outline-none transition-all"
                   style={{
                     border: `2px solid ${errors.name ? '#EF4444' : '#D4B896'}`,
                     background: '#FFFDF7',
@@ -210,13 +210,13 @@ export default function OrderLandingPage() {
                   }}
                 />
                 {errors.name && (
-                  <p className="text-xs mt-1" style={{ color: '#EF4444' }}>{errors.name}</p>
+                  <p className="text-sm mt-1" style={{ color: '#EF4444' }}>{errors.name}</p>
                 )}
               </div>
 
               {/* 電話 */}
               <div>
-                <label className="text-sm font-semibold block mb-1.5" style={{ color: '#5C3D2E' }}>
+                <label className="text-base font-semibold block mb-1.5" style={{ color: '#5C3D2E' }}>
                   電話號碼
                 </label>
                 <input
@@ -224,7 +224,7 @@ export default function OrderLandingPage() {
                   value={customerPhone}
                   onChange={(e) => { setCustomerPhone(e.target.value); setErrors(v => ({ ...v, phone: undefined })) }}
                   placeholder="例：0912-345-678"
-                  className="w-full rounded-xl px-4 py-3 text-base outline-none transition-all"
+                  className="w-full rounded-xl px-4 py-3 text-lg outline-none transition-all"
                   style={{
                     border: `2px solid ${errors.phone ? '#EF4444' : '#D4B896'}`,
                     background: '#FFFDF7',
@@ -233,20 +233,20 @@ export default function OrderLandingPage() {
                   }}
                 />
                 {errors.phone && (
-                  <p className="text-xs mt-1" style={{ color: '#EF4444' }}>{errors.phone}</p>
+                  <p className="text-sm mt-1" style={{ color: '#EF4444' }}>{errors.phone}</p>
                 )}
               </div>
 
               <button
                 onClick={goOnline}
-                className="w-full rounded-2xl py-4 font-bold text-base tracking-[4px] transition-all active:scale-[0.97] mt-2"
+                className="w-full rounded-2xl py-4 font-bold text-lg tracking-[4px] transition-all active:scale-[0.97] mt-2"
                 style={{ background: '#5C3D2E', color: '#F5E6C8', boxShadow: '0 4px 16px rgba(92,61,46,0.25)' }}
               >
                 開始點餐
               </button>
             </div>
 
-            <p className="text-center text-xs mt-5" style={{ color: '#C9A97A' }}>
+            <p className="text-center text-sm mt-5" style={{ color: '#C9A97A' }}>
               完成點餐後將發放取餐號碼牌
             </p>
           </>
