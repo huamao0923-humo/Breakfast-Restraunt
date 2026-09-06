@@ -105,7 +105,7 @@ export default function OrderLandingPage() {
                   現場外帶
                 </span>
                 <span className="text-base" style={{ color: '#9C7A5A' }}>
-                  現場點餐專用!
+                  ⚠️ 現場點餐專用 ⚠️
                 </span>
               </button>
 
