@@ -19,6 +19,7 @@ const CUT          = GS  + '\x56\x41\x10'
 const SIZE_NORMAL   = GS + '!\x00'  // 標準
 const SIZE_LARGE    = GS + '!\x01'  // 加高（寬不變，行容量維持 32）
 const SIZE_TITLE    = GS + '!\x11'  // 標題：加寬加高（行容量縮為 16）
+const SIZE_HUGE     = GS + '!\x22'  // 超大：三倍寬高（內用標示用）
 
 const PAPER_WIDTH       = 32  // 標準 / 加高模式下的行寬
 const PAPER_WIDTH_TITLE = 16  // 加寬加高模式下的行寬
@@ -155,14 +156,19 @@ export function formatReceiptString(order: Order, storeName = '忠國豆漿店')
     ? `外帶 #${String(order.pickup_number ?? 0).padStart(3, '0')}`
     : isOnline
       ? `線上 ${onlineName}`
-      : `${order.table_id} 桌`
+      : '內用'
   const pickupStr = isOnline
     ? `#${String(order.pickup_number ?? 0).padStart(3, '0')}`
     : null
   const time = new Date(order.created_at).toLocaleTimeString('zh-TW', {
     hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Taipei',
   })
-  push(BOLD_ON, label, BOLD_OFF, LF)
+  const isDineIn = !isOnline && order.table_id !== 'takeout'
+  if (isDineIn) {
+    push(SIZE_HUGE, BOLD_ON, label, BOLD_OFF, LF, SIZE_TITLE)
+  } else {
+    push(BOLD_ON, label, BOLD_OFF, LF)
+  }
   if (pickupStr) push(pickupStr, LF)
   push(`時間: ${time}`, LF)
   push(SIZE_NORMAL, divider(), LF)

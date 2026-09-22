@@ -262,7 +262,9 @@ export default function ReportPage() {
                       <span className="font-bold tracking-wide" style={{ color: '#5C3D2E', fontSize: 14 }}>
                         {order.table_id === 'takeout'
                           ? `外帶 #${String(order.pickup_number ?? 0).padStart(3, '0')}`
-                          : `${order.table_id} 桌`}
+                          : order.table_id === 'online'
+                          ? `線上 #${String(order.pickup_number ?? 0).padStart(3, '0')}`
+                          : '內用'}
                       </span>
                       <span className="text-xs" style={{ color: '#9C7A5A' }}>
                         {formatTime(order.created_at)}

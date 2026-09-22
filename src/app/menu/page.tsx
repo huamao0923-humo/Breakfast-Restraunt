@@ -157,6 +157,7 @@ type ReceiptData = { items: ReceiptItem[]; total: number; note: string; pickupNu
 function MenuContent() {
   const searchParams = useSearchParams()
   const table        = searchParams.get('table') || 'A1'
+  const diningLabel  = table === 'takeout' ? '外帶' : table === 'online' ? '線上自取' : '內用'
   const customerName  = searchParams.get('customer_name') || ''
   const customerPhone = searchParams.get('customer_phone') || ''
   const shop          = useShopStatus()
@@ -332,7 +333,7 @@ function MenuContent() {
               忠國豆漿
             </h1>
             <p className="text-sm text-center mt-1" style={{ color: '#7A4F2A' }}>
-              {table === 'takeout' ? '外帶' : `桌號 ${table}`}　·　手工現做
+              {diningLabel}　·　手工現做
             </p>
           </div>
 
@@ -420,7 +421,7 @@ function MenuContent() {
               <h2 className="text-xl font-bold" style={{ color: C.text }}>確認訂單</h2>
               <span className="text-sm px-3 py-1 rounded-full font-medium"
                 style={{ background: C.pill, color: C.sub }}>
-                {table === 'takeout' ? '外帶' : `桌號 ${table}`}
+                {diningLabel}
               </span>
             </div>
             {/* 品項列表 */}
@@ -523,12 +524,12 @@ function MenuContent() {
               </div>
             )}
 
-            {/* 桌號提示（內用） */}
+            {/* 內用提示 */}
             {receipt.pickupNumber == null && (
               <div className="w-full max-w-xs rounded-2xl flex items-center justify-center py-5 mb-6"
                 style={{ background: C.primary, boxShadow: '0 4px 16px rgba(217,119,6,0.3)' }}>
                 <span className="text-xl font-bold tracking-[3px]" style={{ color: '#fff' }}>
-                  {table} 桌　·　廚房收到囉 🍳
+                  內用　·　廚房收到囉 🍳
                 </span>
               </div>
             )}

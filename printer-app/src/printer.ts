@@ -15,6 +15,9 @@ const BOLD_OFF      = ESC + 'E\x00'     // 粗體關
 const LF            = '\n'              // 換行
 const CUT           = GS + 'V\x41\x10' // 部分裁紙
 
+const SIZE_NORMAL   = GS + '!\x00'    // 標準字體
+const SIZE_HUGE     = GS + '!\x22'    // 超大：三倍寬高（內用標示用）
+
 const PAPER_WIDTH = 32 // 58mm ≈ 32 ASCII 字元
 
 // ── 工具函式 ──────────────────────────────────────────────
@@ -67,7 +70,7 @@ export function formatReceipt(order: Order, storeName = '早餐店'): string {
   const orderLabel =
     order.table_id === 'takeout'
       ? `外帶 #${String(order.pickup_number ?? 0).padStart(3, '0')}`
-      : `${order.table_id} 桌`
+      : '內用'
 
   const time = new Date(order.created_at).toLocaleTimeString('zh-TW', {
     hour: '2-digit',
@@ -75,7 +78,12 @@ export function formatReceipt(order: Order, storeName = '早餐店'): string {
     hour12: false,
   })
 
-  push(BOLD_ON, orderLabel, BOLD_OFF, LF)
+  const isDineIn = order.table_id !== 'takeout' && order.table_id !== 'online'
+  if (isDineIn) {
+    push(SIZE_HUGE, BOLD_ON, orderLabel, BOLD_OFF, LF, SIZE_NORMAL)
+  } else {
+    push(BOLD_ON, orderLabel, BOLD_OFF, LF)
+  }
   push(`時間: ${time}`, LF)
   push(divider(), LF)
 

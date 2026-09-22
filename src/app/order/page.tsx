@@ -5,9 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useShopStatus } from '@/hooks/useShopStatus'
 import { ShopClosedOverlay } from '@/components/ShopClosedOverlay'
 
-const TABLES = [1, 2, 3, 4, 5]
-
-type Step = 'choose' | 'table' | 'online'
+type Step = 'choose' | 'online'
 
 export default function OrderLandingPage() {
   const router = useRouter()
@@ -31,8 +29,7 @@ export default function OrderLandingPage() {
   }
 
   const goTakeout = () => router.push('/menu?table=takeout')
-  const goDineIn  = () => setStep('table')
-  const goTable   = (n: number) => router.push(`/menu?table=${n}`)
+  const goDineIn  = () => router.push('/menu?table=dinein')
 
   const validateOnline = () => {
     const e: { name?: string; phone?: string } = {}
@@ -123,54 +120,14 @@ export default function OrderLandingPage() {
                   內用
                 </span>
                 <span className="text-base" style={{ color: '#9C7A5A' }}>
-                  選擇桌號，輕鬆享用
+                  【內用點餐】
                 </span>
               </button>
             </div>
           </>
         )}
 
-        {/* ── Step 2：選擇桌號 ── */}
-        {step === 'table' && (
-          <>
-            <div className="flex items-center gap-3 mb-6">
-              <button
-                onClick={() => setStep('choose')}
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-90"
-                style={{ background: '#EDE5D8', color: '#5C3D2E', fontSize: 20 }}
-              >
-                ‹
-              </button>
-              <p className="text-lg font-semibold" style={{ color: '#5C3D2E' }}>
-                請選擇桌號
-              </p>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              {TABLES.map((n) => (
-                <button
-                  key={n}
-                  onClick={() => goTable(n)}
-                  className="rounded-2xl py-6 flex flex-col items-center gap-1 transition-all active:scale-95"
-                  style={{
-                    background: '#FFFDF7',
-                    border: '2px solid #D4B896',
-                    boxShadow: '0 2px 6px rgba(92,61,46,0.07)',
-                  }}
-                >
-                  <span className="text-4xl font-black" style={{ color: '#5C3D2E' }}>{n}</span>
-                  <span className="text-sm" style={{ color: '#9C7A5A' }}>桌</span>
-                </button>
-              ))}
-            </div>
-
-            <p className="text-center text-sm mt-6" style={{ color: '#C9A97A' }}>
-              選錯了？點左上角返回重選
-            </p>
-          </>
-        )}
-
-        {/* ── Step 3：線上自取填寫資料 ── */}
+        {/* ── Step 2：線上自取填寫資料 ── */}
         {step === 'online' && (
           <>
             <div className="flex items-center gap-3 mb-6">

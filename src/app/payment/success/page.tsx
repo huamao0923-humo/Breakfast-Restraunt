@@ -49,7 +49,7 @@ function SuccessContent() {
       <div className="flex-1 overflow-y-auto flex flex-col items-center px-6 py-8">
         <p className="text-sm tracking-[4px] mb-1" style={{ color: '#C9A97A' }}>忠國豆漿</p>
         <p className="text-xs tracking-[2px] mb-6" style={{ color: '#7A5240' }}>
-          付款成功 · {isTakeout ? '外帶取餐號碼單' : `內用 ${order?.table_id} 桌`}
+          付款成功 · {isTakeout ? '外帶取餐號碼單' : '內用'}
         </p>
 
         {/* 綠色勾 */}

@@ -208,7 +208,7 @@ export default function App() {
                       <Text style={s.cardTitle}>
                         {order.table_id === 'takeout'
                           ? `外帶 #${String(order.pickup_number ?? 0).padStart(3, '0')}`
-                          : `${order.table_id} 桌`}
+                          : '內用'}
                       </Text>
                       {idx === 0 && <View style={s.newBadge}><Text style={s.newBadgeText}>新單</Text></View>}
                     </View>

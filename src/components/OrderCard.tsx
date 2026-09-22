@@ -30,7 +30,7 @@ export function OrderCard({
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-xl font-bold">
-            {isPickup ? `外帶 #${String(order.pickup_number).padStart(3, '0')}` : `桌號 ${order.table_id}`}
+            {isPickup ? `外帶 #${String(order.pickup_number).padStart(3, '0')}` : '內用'}
           </h3>
           <p className="text-sm text-gray-600">{formatDate(order.created_at)}</p>
         </div>

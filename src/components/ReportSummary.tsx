@@ -80,7 +80,7 @@ export function ReportSummary({ orders }: ReportSummaryProps) {
                   <div className="font-semibold">
                     {order.table_id === 'takeout'
                       ? `外帶 #${String(order.pickup_number).padStart(3, '0')}`
-                      : `桌號 ${order.table_id}`}
+                      : '內用'}
                   </div>
                   <div className="text-sm text-gray-600">
                     {formatDate(order.created_at)}

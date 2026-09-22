@@ -295,7 +295,7 @@ function KitchenContent() {
                       ) : (
                         <span className="font-bold tracking-[2px] rounded-lg"
                           style={{ background: '#A0522D', color: '#fff', fontSize: 14, padding: '5px 12px' }}>
-                          內用 {order.table_id} 桌
+                          內用
                         </span>
                       )}
                       {isNew && (
