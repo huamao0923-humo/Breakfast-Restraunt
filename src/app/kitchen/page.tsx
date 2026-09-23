@@ -27,6 +27,7 @@ function KitchenContent() {
   const printer = usePrinter()
   const shop    = useShopStatus()
   const audioElRef = useRef<HTMLAudioElement | null>(null)
+  const [audioReady, setAudioReady] = useState(false)
   const playDingDongRef = useRef<() => void>(() => {})
 
   // 每次 render 更新 ref，確保 SSE listener 永遠拿到最新版本
@@ -34,25 +35,27 @@ function KitchenContent() {
     const el = audioElRef.current
     if (!el) return
     el.currentTime = 0
-    el.play().catch(() => {})
+    el.play().then(() => setAudioReady(true)).catch(() => setAudioReady(false))
   }
 
-  // 初始化音檔；瀏覽器需在使用者互動後才允許播放，所以第一次點擊時做一次靜音 play 解鎖
+  // 初始化音檔；瀏覽器需在使用者互動後才允許播放，所以每次互動都嘗試解鎖，成功才停止監聽
   useEffect(() => {
-    audioElRef.current = new Audio('/ding.mp3')
-    audioElRef.current.preload = 'auto'
+    const el = new Audio('/ding.mp3')
+    el.preload = 'auto'
+    audioElRef.current = el
 
-    const unlock = () => {
-      const el = audioElRef.current
-      if (!el) return
-      el.play().then(() => { el.pause(); el.currentTime = 0 }).catch(() => {})
-    }
-    window.addEventListener('click', unlock, { once: true })
-    window.addEventListener('touchstart', unlock, { once: true })
-    return () => {
+    const cleanup = () => {
       window.removeEventListener('click', unlock)
       window.removeEventListener('touchstart', unlock)
     }
+    function unlock() {
+      el.play()
+        .then(() => { el.pause(); el.currentTime = 0; setAudioReady(true); cleanup() })
+        .catch(() => {})
+    }
+    window.addEventListener('click', unlock)
+    window.addEventListener('touchstart', unlock)
+    return cleanup
   }, [])
 
   // 已看過的訂單 ID — 用來判斷輪詢抓到的是不是新單
@@ -212,6 +215,19 @@ function KitchenContent() {
               style={{ background: '#6EE7B7', animation: 'pulse 2s infinite' }} />
             <span className="text-xs tracking-wide" style={{ color: '#3D2010' }}>即時同步中</span>
           </div>
+          <button
+            onClick={() => playDingDongRef.current()}
+            title={audioReady ? '提示音正常，點一下試聽' : '提示音尚未解鎖，點一下啟用'}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              background: audioReady ? 'rgba(0,0,0,0.12)' : '#F87171',
+              color: audioReady ? '#3D2010' : '#fff',
+              border: 'none', borderRadius: 20,
+              padding: '4px 10px', cursor: 'pointer',
+              fontSize: 12, fontWeight: 'bold',
+            }}>
+            {audioReady ? '🔔 提示音' : '🔕 點我開啟提示音'}
+          </button>
           <button
             onClick={() => { if (!shop.saving) shop.toggle() }}
             disabled={shop.saving}
