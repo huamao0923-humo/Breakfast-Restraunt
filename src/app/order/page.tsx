@@ -245,23 +245,23 @@ export default function OrderLandingPage() {
       {/* ── 用餐方式說明（確認後才進入點餐）── */}
       {confirmMode && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-6"
-          style={{ background: 'rgba(0,0,0,0.5)' }}
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.5)', padding: '0 24px' }}
           onClick={() => setConfirmMode(null)}
         >
           <div
-            className="w-full max-w-sm rounded-2xl px-6 py-7"
-            style={{ background: '#FFFDF7', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}
+            className="w-full max-w-sm rounded-2xl"
+            style={{ background: '#FFFDF7', boxShadow: '0 8px 32px rgba(0,0,0,0.2)', padding: '28px 28px 24px' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="text-center mb-5">
+            <div className="text-center" style={{ marginBottom: 20 }}>
               <span className="text-5xl">{MODE_INFO[confirmMode].icon}</span>
-              <h2 className="text-2xl font-bold tracking-[4px] mt-2" style={{ color: '#3D2B1F' }}>
+              <h2 className="text-2xl font-bold tracking-[4px]" style={{ color: '#3D2B1F', marginTop: 8 }}>
                 {MODE_INFO[confirmMode].title}
               </h2>
             </div>
 
-            <ul className="flex flex-col gap-2 mb-4">
+            <ul className="flex flex-col gap-2" style={{ marginBottom: 16, padding: '0 4px' }}>
               {MODE_INFO[confirmMode].lines.map((line) => (
                 <li key={line} className="text-lg" style={{ color: '#5C3D2E' }}>
                   ✓ {line}
@@ -269,23 +269,23 @@ export default function OrderLandingPage() {
               ))}
             </ul>
 
-            <p className="text-base font-semibold rounded-xl px-4 py-3 mb-6"
-              style={{ background: '#FEF3C7', color: '#92400E' }}>
+            <p className="text-base font-semibold rounded-xl"
+              style={{ background: '#FEF3C7', color: '#92400E', padding: '12px 16px', marginBottom: 24 }}>
               ⚠️ {MODE_INFO[confirmMode].warn}
             </p>
 
             <div className="flex flex-col gap-3">
               <button
                 onClick={confirmGo}
-                className="w-full rounded-2xl py-4 font-bold text-lg tracking-[4px] transition-all active:scale-[0.97]"
-                style={{ background: '#5C3D2E', color: '#F5E6C8', boxShadow: '0 4px 16px rgba(92,61,46,0.25)' }}
+                className="w-full rounded-2xl font-bold text-lg tracking-[4px] transition-all active:scale-[0.97]"
+                style={{ background: '#5C3D2E', color: '#F5E6C8', boxShadow: '0 4px 16px rgba(92,61,46,0.25)', padding: '16px 0' }}
               >
                 確認，開始點餐
               </button>
               <button
                 onClick={() => setConfirmMode(null)}
-                className="w-full rounded-2xl py-3 font-semibold text-base tracking-[2px] transition-all active:scale-[0.97]"
-                style={{ background: '#EDE5D8', color: '#5C3D2E' }}
+                className="w-full rounded-2xl font-semibold text-base tracking-[2px] transition-all active:scale-[0.97]"
+                style={{ background: '#EDE5D8', color: '#5C3D2E', padding: '12px 0' }}
               >
                 返回重選
               </button>
