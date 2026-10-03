@@ -90,8 +90,8 @@ function wrapText(text: string, maxWidth: number): string[] {
 
 /**
  * 品項區塊：
- * - 品項名靠左，數量+金額靠右同行；名稱過長則換行，金額接在最後一行右側
- * - 每項加料各自獨立一行，靠左縮排，超長自動換行
+ * - 無加料：品項名靠左，數量+金額靠右同行；名稱過長則換行，金額接在最後一行右側
+ * - 有加料：品項名單獨成行，每項加料各自一行（縮排），數量+金額接在最後一個加料那一行右側
  */
 function itemBlock(
   name: string,
@@ -104,6 +104,22 @@ function itemBlock(
   const rightW = strWidth(right)
   const lines: string[] = []
 
+  // 有加料：品名單獨成行，數量+金額接在最後一個加料那一行右側
+  if (options.length > 0) {
+    lines.push(...wrapText(name, width))
+    for (const opt of options) {
+      const label = opt.qty && opt.qty > 1 ? `${opt.label} ×${opt.qty}` : opt.label
+      lines.push(...wrapText(label, width - 2).map(l => '  ' + l))
+    }
+    const lastIdx = lines.length - 1
+    if (strWidth(lines[lastIdx]) + rightW <= width) {
+      lines[lastIdx] = padEnd(lines[lastIdx], width - rightW) + right
+    } else {
+      lines.push(' '.repeat(width - rightW) + right)
+    }
+    return lines
+  }
+
   if (strWidth(name) + rightW <= width) {
     lines.push(padEnd(name, width - rightW) + right)
   } else {
@@ -115,13 +131,6 @@ function itemBlock(
       nameLines.push(' '.repeat(width - rightW) + right)
     }
     lines.push(...nameLines)
-  }
-
-  // 每項加料各自一行
-  for (const opt of options) {
-    const label = opt.qty && opt.qty > 1 ? `${opt.label} ×${opt.qty}` : opt.label
-    const optLines = wrapText(label, width - 2)
-    lines.push(...optLines.map(l => '  ' + l))
   }
 
   return lines
